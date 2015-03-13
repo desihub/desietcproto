@@ -15,7 +15,7 @@ class GuiderPackProcessor:
         pass
 
 
-    def Estimate (gpack):
+    def Estimate (self,gpack):
         """ Takes a GuiderPack and returns an 
         estimate of curent dSigDt and DNoiseDt  in a tuple"""
         pass

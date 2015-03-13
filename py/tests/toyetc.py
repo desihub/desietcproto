@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 sys.path.append("../etc")
+sys.path.append("etc")
 
 import etc
 import MockGuiderPackProcessor
@@ -11,19 +12,19 @@ import MockTargetsProcessor
 test=etc.ETC(gpp=MockGuiderPackProcessor.GuiderPackProcessor())
 ## Start integration
 
-time=0
+time=0.0
 test.StartIntegration(time, None, tp=MockTargetsProcessor.TargetsProcessor())
 while True:
-    time+=1
+    time+=1.0
     ## send a fake packet
     gfapack=None
     test.ProcessGFAPacket(time,gfapack)
-    ## pull results out
-    r=test.results
-    ## print where we are (including projection)
-    r.printStatus()
+    ## pull results out and print status (including proj)
+    test.results.printStatus()
     ## if we are done, break
-    if (r.complete()):
+    if (test.results.complete()):
         break
-test.StopIntegration()
+time+=0.1
+test.StopIntegration(time)
+test.results.printStatus()
 print "Done"

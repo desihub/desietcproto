@@ -11,18 +11,18 @@ from __future__ import division
 from __future__ import print_function
 
 class GuiderPackProcessor:
-    def __init__(self, sig0=10, dsigdt=0.1, noise0=5; dnoisedt=-0.1):
-        """ Mock data. We have a very good observation starting with sig0 and noise0
-        and changing by dsigdt and dnoisedt in each step """
+    def __init__(self, sig0=5, dsigdt=0.1, noiseVar0=1, dnoiseVardt=+0.05):
+        """ Mock data. We have a very good observation starting with sig0 and noiseVar0
+        and changing by dsigdt and dnoiseVardt in each step """
         self.sig=sig0
-        self.noise=noise0
+        self.noiseVar=noiseVar0
         self.dsigdt=dsigdt
-        self.dnoisedt=dnoisedt
+        self.dnoiseVardt=dnoiseVardt
 
-    def Estimate (gpack):
+    def Estimate (self,gpack):
         """ Takes a GuiderPack and returns an 
-        estimate of curent dSigDt and DNoiseDt  in a tuple"""
-        toret=(self.sig, self.noise)
+        estimate of curent dSigDt and DNoiseVarDt  in a tuple"""
+        toret=(self.sig, self.noiseVar)
         self.sig+=self.dsigdt
-        self.noise+=self.dnoisedt
+        self.noiseVar+=self.dnoiseVardt
         return toret
