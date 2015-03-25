@@ -16,7 +16,8 @@ class TargetsProcessor:
     def __init__ (self, targets):
         self.targets=targets
 
-    def Completion(self,Sig,Noise,Time):
+
+    def Completion(self,Sig,NoiseVar,Time):
         """ This is where the devil resides. Given our self.targets
         and ETC normalized values of Sig, Noise and Time, return 
         completion, which is a number between 0.0 and 1.0.
