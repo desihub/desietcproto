@@ -73,7 +73,7 @@ d(T) = 19335 T^3 \exp(-6400/T)\,t_{\text{exp}} \; ,
 \end{equation}
 with sensor temperature $T$ measured in Kelvin, corresponding to $d(T) \simeq 80$ elec/pix/exp and $d'(T)\sigma_T \simeq 1.4$ elec/pix/exp at 20$^\circ$C with $\sigma_T = 0.1^\circ$C. We assume that $D \ll B_i$, since the spectrograph sensor is cooled, so that the ratio $\sigma_{B_i}/B_i$ is independent of $\beta$ to a good approximation.
 
-\tab{bgpar} summarizes the nominal parameter values we assume for our estimates and \fig{bgpar} shows the corresponding dependence of $\sigma_{B_i}/B_i$ on the area $A$, guide sensor temperature $\overline{T}$ and temperature measurement error $\sigma_T$. Recall from \eqn{snr-bglim} that $(\sigma_{B_i}/B_i)/2$ sets the $\sigma_{\nu}/\nu$ floor for background-dominated spectral targets. The area required to saturate the guide sensor background measurement depends on how accurately the sensor temperature is measured: with $\sigma_T = 0.1^\circ$C, $\sim 1000$ pixels are sufficient but with $\sigma_T = 0.01^\circ$C, an order of magnitude more pixels are required. However, the overall error and temperature sensitivity are greatly reduced with the smaller $\sigma_T$ so it may not be necessary to saturate the background measurement area if $\sigma_T \simeq 0.01^\circ$C can be achieved.
+\tab{bgpar} summarizes the nominal parameter values we assume for our estimates and \fig{bgpar} shows the corresponding dependence of $\sigma_{B_i}/B_i$ on the area $A$, guide sensor temperature $\overline{T}$ and temperature measurement error $\sigma_T$. Recall from \eqn{snr-bglim} that $(\sigma_{B_i}/B_i)/2$ sets the $\sigma_{\nu}/\nu$ floor for background-dominated spectral targets. The area required to saturate the guide sensor background measurement depends on how accurately the sensor temperature is measured: with $\sigma_T = 1.0^\circ$C, $\sim 100$ pixels are sufficient but with $\sigma_T = 0.1^\circ$C, an order of magnitude more pixels are required. However, the overall error and temperature sensitivity are greatly reduced with the smaller $\sigma_T$ so it may not be necessary to saturate the background measurement area if $\sigma_T \simeq 0.1^\circ$C can be achieved. Note that this is a requirement on the absolute temperature measurement error, not the relative error. However, since the dark current can be measured more accurately than the temperature itself, an alternate approach would be to base dark current corrections on a dark-current frame combined with relative temperature monitoring.  Although the lack of a shutter precludes taking true dark frames, it should be possible to infer a pseudo dark frame by subtracting the sky measured in the previous spectrographic exposure. This pseudo dark frame would then reveal any persistent temperature gradients due to local heat loads.
 
 \begin{table}[htb]
 \begin{center}
@@ -95,7 +95,7 @@ Nominal sky brightness & $\overline{b} - \overline{d}$ & 10.9 elec/pix/exp \\
 \begin{figure}[htb]
 \begin{center}
 \includegraphics[width=5in]{bg}
-\caption{Predicted fractional error $\sigma_{B_i}/B_i$ for estimating the incremental spectral background during a single guider exposure as a function of the signal-free area $A$ used to estimate the guider background. For comparison, each of the 10 GFA sensors has an active area of 2 Mpix. Solid (dashed) curves show predictions for guide sensor operating temperatures of 10, 20, 30$^\circ$C with measurement errors of $\pm0.1^\circ$C ($\pm 0.01^\circ$C).}
+\caption{Predicted fractional error $\sigma_{B_i}/B_i$ for estimating the incremental spectral background during a single guider exposure as a function of the signal-free area $A$ used to estimate the guider background. For comparison, each of the 10 GFA sensors has an active area of 2 Mpix. Solid (dashed) curves show predictions for guide sensor operating temperatures of 10, 20, 30$^\circ$C with measurement errors of $\pm1.0^\circ$C ($\pm 0.1^\circ$C).}
 \label{fig:bgpar}
 \end{center}
 \end{figure}
@@ -165,15 +165,15 @@ To summarize we present a few benchmark scenarios to illustrate the range of exp
 \begin{enumerate}
 \item Our baseline model assumes the following conditions that are constant during the spectroscopic integration: $\nu_{\ast} = 100$, $T = 20^\circ$C, $w = 1.2$ arcsec.
 \item We linearly increase the sky level by 20\% over 20 minutes while holding all other parameters fixed at their baseline values. This variation increases $B_i$ and (mildly, via $\nu_{\ast}$) $\sigma_{S_i}$.
-\item We linearly increase the guide sensor temperature from 20 to $30^\circ$C over 20 minutes while holding all other parameters fixed at their baseline values. This variation increases $\sigma_{B_i}$ and (mildly, via $\nu_{\ast}$) $\sigma_{S_i}$.
+\item We linearly increase the guide sensor temperature from 20 to $25^\circ$C over 20 minutes while holding all other parameters fixed at their baseline values. This variation increases $\sigma_{B_i}$ and (mildly, via $\nu_{\ast}$) $\sigma_{S_i}$.
 \item We linearly increase the Gaussian PSF FWHM from 1.4 to 1.6 arcseconds over 20 minutes while holding all other parameters fixed at their baseline values. This variation decreases $S_i$ and increases (mildly, via $\nu_{\ast}$) $\sigma_{S_i}/S_i$.
 \end{enumerate}
-All of our scenarios assume $\sigma_T = 0.1^\circ$C, $A = 10^4$ pixels, in addition to the parameter values in \tab{bgpar}. The time required to reach the target $\nu = 10$ varies from 15.3--17.7 minutes between these scenarios, with completion windows of 3.3--4.3 seconds.
+All of our scenarios assume $\sigma_T = 1.0^\circ$C, $A = 10^4$ pixels, in addition to the parameter values in \tab{bgpar}. The time required to reach the target $\nu = 10$ varies from 15.1--18.1 minutes between these scenarios, with completion windows of 30--40 seconds.
 
 \begin{figure}[htb]
 \begin{center}
 \includegraphics[width=5.5in]{project}
-\caption{Projected evolution of $B_i$ (blue), $4 S_i$ (red) and $\nu$ (green) during a 20-minute spectroscopic integration for the four scenarios described in the text. Note that $B_i$ and $4 S_i$ use the right-hand scale with a suppressed zero.  The factor of 4 scaling applied to $S_i$ was chosen arbitrarily to improve the clarity of the plots. All integrations are tracked to a target SNR of 10. Ranges show $\pm 1\sigma$, including for $\nu$ where the spread is too small to see.}
+\caption{Projected evolution of $B_i$ (blue), $4 S_i$ (red) and $\nu$ (green) during a 20-minute spectroscopic integration for the four scenarios described in the text. Note that $B_i$ and $4 S_i$ use the right-hand scale with a suppressed zero.  The factor of 4 scaling applied to $S_i$ was chosen arbitrarily to improve the clarity of the plots. All integrations are tracked to a target SNR of 10. Ranges on each curve show $\pm 1\sigma$.}
 \label{fig:project}
 \end{center}
 \end{figure}
