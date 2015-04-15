@@ -5,7 +5,7 @@
 \usepackage{graphicx}
 
 \title{DESI Online ETC Forecasts\\
-{\em\Large Version 0.1}}
+{\em\Large Version 0.2}}
 \author{David Kirkby and Anze Slosar}
 
 \providecommand{\eqn}[1]{eqn.~(\ref{eqn:#1})}
@@ -51,6 +51,7 @@ where $\alpha$ is some time-independent constant, $\epsilon_i$ tracks the changi
 \frac{\sigma_{\epsilon_i}^2}{\overline{\epsilon}_i^2} +
 \rho_i\frac{\sigma_{\epsilon_i}}{\overline{\epsilon}_i}\frac{\sigma_{w_i}}{\overline{w}_i} \left( \overline{w}_i\frac{A'}{A}\right) +
 \frac{\sigma_{w_i}^2}{\overline{w}_i^2} \left( \overline{w}_i\frac{A'}{A}\right)^2
+\label{eqn:sig-error}
 \end{equation}
 where $\overline{\epsilon}_i$ and $\overline{w}_i$ are the true values for exposure $i$, $A$ and $A'$ are evaluated at $\overline{w}_i$, and $\rho_i$ is the correlation coefficient for the estimated $\epsilon_i$ and $w_i$ (which is generally large and positive).
 
@@ -109,11 +110,11 @@ C_{\ast} = \nu_{\ast,i}^{-2}\begin{pmatrix}
 \end{pmatrix}\quad, \quad
 \nu_{\ast,i}^2 = \frac{\log 2}{\pi}\, \frac{\overline{\epsilon}_i^2 f^2}{b \overline{w}_i^2}\, n_{\ast}
 \end{equation}
-where $\nu_{\ast,i}$ is the total SNR per guide exposure for $N_{\ast}$ stars, and we find $\rho_i = 1/\sqrt{2}$. The corresponding RMS centroid measurement errors are uncorrelated with the flux and size estimates
+where $\nu_{\ast,i}$ is the total SNR per guide exposure for $n_{\ast}$ stars, and we find $\rho_i = 1/\sqrt{2}$. The corresponding RMS centroid measurement errors are uncorrelated with the flux and size estimates
 \begin{equation}
 \sigma_{xy} = \frac{\overline{w}_i\,\nu_{\ast,i}^{-1}}{2\sqrt{2\log 2}} \; .
 \end{equation}
-The fiber acceptance fraction for a Gaussian PSF is
+Note that the appropriate $\nu_\ast$ to use here is marginalized over the unknown size of the PSF, leading to smaller values than are obtained with the usual ansatz of an optimal matched filter. The fiber acceptance fraction for a Gaussian PSF is
 \begin{equation}
 A(w) = 1 - 2^{-D^2/(w^2+w_j^2)}
 \end{equation}
@@ -124,6 +125,37 @@ where $D = 1.46$ arcseconds is the fiber diameter and we assume that targets are
 \includegraphics[width=5in]{sig}
 \caption{Predicted fractional error $\sigma_{S_i}/S_i$ for estimating the incremental spectral signal during a single guider exposure as a function of the total guide star SNR per guide exposure assuming a PSF FWHM of 1.2 arcseconds. Curves show PSF FWHM values of 1.6,1.2,0.8 arcseconds and are calculated assuming a 0.1 arcsecond RMS jitter for the telescope point and no average centroid offset. Dashed curves show the improvement due to a 25\% reduction in the sky level relative to the nominal level.}
 \label{fig:sigpar}
+\end{center}
+\end{figure}
+
+\section{Realistic PSF Corrections}
+
+The assumptions behind the Gaussian PSF approximation are not particularly good: the PSF is not Gaussian, the PSF is not well sampled by the guide sensor pixels, and guide star images are not background dominated. In this section, we estimate the corrections due a more realistic PSF model. For our PSF model, we convolve the following three components:
+\begin{itemize}
+\item an Airy function for a 3.8m diameter mirror with 25\% of its area obscured by the secondary mirror,
+\item a Kolmogorov function with FWHM varying from 0.8--1.6 arcseconds, and
+\item a Gaussian function with RMS 0.1 arcseconds to model pointing jitter.
+\end{itemize}
+We include realistic pixel sampling using the GalSim program to render the PSF into a 20 by 20 pixel postage stamp with 15 micron pixels ($\simeq 0.22$ arcsec) and a random sub-pixel offset. Finally, we calculate the covariance matrix numerically as the inverse Fisher matrix, including the signal contribution to the per-pixel variance. The results are summarized in \fig{acceptance} and \fig{covariance}. Our conclusions are that:
+\begin{itemize}
+\item The fiber acceptance fraction $A(w)$ is reduced by 10--15\% compared with the Gaussian approximation but the change in the relevant combination $w A'(w)/A(w)$ in \eqn{sig-error} is negligible, except for the smallest FHWM values.
+\item A offset of up to 200 mas between the PSF centroid and the fiber center has a negligible impact.
+\item The expected errors for measuring the PSF FWHM are increased by 10-20\% but corrections to the centroid measurement error and correlation coefficient are less than 5\%.
+\end{itemize}
+
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=5.5in]{acceptance}
+\caption{Fiber acceptance function $A(w)$ (left) and the combination $w A'(w)/A(w)$ (right) appearing in \eqn{sig-error}. Predictions are for the realistic PSF model and pixel sampling described in the text. Solid curves show the prediction for a PSF that is offset from the fiber center by 0, 100, or 200 mas.}
+\label{fig:acceptance}
+\end{center}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=4.5in]{covariance}
+\caption{Ratios of quantities calculated for the realistic and Gaussian PSF models.  Curves show the Fisher-matrix predictions for the FWHM error $\sigma_w$, the $\epsilon$-$w$ correlation coefficient $\rho$, and the centroid error $\sigma_{xy}$ as a function of the atmospheric PSF FWHM. Predictions for both models scale with the (fully marginalized) SNR $\nu_\ast$ and the Gaussian prediction is indepdent of FWHM.}
+\label{fig:covariance}
 \end{center}
 \end{figure}
 
@@ -148,7 +180,6 @@ All of our scenarios assume $\sigma_T = 0.1^\circ$C, $A = 10^4$ pixels, in addit
 
 Some open issues for possible future investigation:
 \begin{itemize}
-\item The Gaussian PSF approximations are not particularly good: the PSF is not Gaussian, the PSF is not well sampled by the guide sensor pixels, and guide star images are not background dominated. A more accurate modeling of guide star measurements probably does not degrade the estimates presented here by more than a factor of two, so is unlikely to change the overall conclusions.
 \item The PSF is wavelength dependent with FWHM varying by about 20\% across the spectrograph, so differences between the guide star SED, convolved with the GFA filter, and the target SED introduce small chromatic effects. This is probably a negligible effect at the level of accuracy required for the online ETC.
 \item Targets are generally not centered on their fibers except at the nominal integration midpoint, even with perfect guiding. These effects are calculable but should be smaller than the pointing jitter, so are probably negligible for the online ETC.
 \end{itemize}
