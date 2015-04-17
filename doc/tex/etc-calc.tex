@@ -4,8 +4,8 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 
-\title{DESI Online ETC Forecasts\\
-{\em\Large Version 0.2}}
+\title{DESI Online Exposure Time Calculator Forecasts\\
+{\Large DESI-doc-1100-v0.3}}
 \author{David Kirkby and Anze Slosar}
 
 \providecommand{\eqn}[1]{eqn.~(\ref{eqn:#1})}
@@ -28,6 +28,7 @@ where $i$ indexes the guider exposures taken at $\simeq 1$~Hz during a $\simeq 2
 \begin{equation}
 \frac{\sigma_\nu^2}{\nu^2} = \frac{r^2}{4} \left(\frac{\sigma_B}{B}\right)^2 + \frac{(1+r)^2}{4} \left(\frac{\sigma_S}{S}\right)^2
 \quad , \quad r \equiv \frac{B}{S+B}
+\label{eqn:dnu}
 \; ,
 \end{equation}
 with
@@ -61,7 +62,7 @@ B_i = \beta (b_i - d(T_i)) + D
 \end{equation}
 for some time-independent constant $\beta$, assumed dark current model $d(T)$ evaluated at the measured temperature $T_i$ and constant dark current $D$ in electrons per unit spectrograph sensor area per guide exposure. The corresponding variance is
 \begin{equation}
-\sigma_{B_i}^2 = \beta\left((\overline{b_i}  + \sigma_{\text{ro}}^2)A^{-1} + d'(\overline{T}_i)^2 \sigma_T^2\right) + D
+\sigma_{B_i}^2 = \beta^2\left((\overline{b_i}  + \sigma_{\text{ro}}^2)A^{-1} + d'(\overline{T}_i)^2 \sigma_T^2\right) + D
 \end{equation}
 where $A$ is the total signal-free guide sensor area used to estimate $b_i$, $\sigma_{\text{ro}}^2$ is the readout noise variance, $\overline{T}_i$ is the true temperature and $\sigma_T^2$ is the temperature measurement variance.
 
@@ -71,7 +72,7 @@ The e2v ccd230-42 sensor that has been selected for the GFA has a dark current i
 \begin{equation}
 d(T) = 19335 T^3 \exp(-6400/T)\,t_{\text{exp}} \; ,
 \end{equation}
-with sensor temperature $T$ measured in Kelvin, corresponding to $d(T) \simeq 80$ elec/pix/exp and $d'(T)\sigma_T \simeq 1.4$ elec/pix/exp at 20$^\circ$C with $\sigma_T = 0.1^\circ$C. We assume that $D \ll B_i$, since the spectrograph sensor is cooled, so that the ratio $\sigma_{B_i}/B_i$ is independent of $\beta$ to a good approximation.
+with sensor temperature $T$ measured in Kelvin, corresponding to $d(T) \simeq 80$ elec/pix/exp and $d'(T)\sigma_T \simeq 0.7$ elec/pix/exp at 20$^\circ$C with $\sigma_T = 0.1^\circ$C. We assume that $D \ll B_i$, since the spectrograph sensor is cooled, so that the ratio $\sigma_{B_i}/B_i$ is independent of $\beta$ to a good approximation.
 
 \tab{bgpar} summarizes the nominal parameter values we assume for our estimates and \fig{bgpar} shows the corresponding dependence of $\sigma_{B_i}/B_i$ on the area $A$, guide sensor temperature $\overline{T}$ and temperature measurement error $\sigma_T$. Recall from \eqn{snr-bglim} that $(\sigma_{B_i}/B_i)/2$ sets the $\sigma_{\nu}/\nu$ floor for background-dominated spectral targets. The area required to saturate the guide sensor background measurement depends on how accurately the sensor temperature is measured: with $\sigma_T = 1.0^\circ$C, $\sim 100$ pixels are sufficient but with $\sigma_T = 0.1^\circ$C, an order of magnitude more pixels are required. However, the overall error and temperature sensitivity are greatly reduced with the smaller $\sigma_T$ so it may not be necessary to saturate the background measurement area if $\sigma_T \simeq 0.1^\circ$C can be achieved. Note that this is a requirement on the absolute temperature measurement error, not the relative error. However, since the dark current can be measured more accurately than the temperature itself, an alternate approach would be to base dark current corrections on a dark-current frame combined with relative temperature monitoring.  Although the lack of a shutter precludes taking true dark frames, it should be possible to infer a pseudo dark frame by subtracting the sky measured in the previous spectrographic exposure. This pseudo dark frame would then reveal any persistent temperature gradients due to local heat loads.
 
@@ -159,6 +160,35 @@ We include realistic pixel sampling using the GalSim program to render the PSF i
 \end{center}
 \end{figure}
 
+\section{Calibration}
+
+The results above focus on the fractional errors $\sigma_S/S$ and $\sigma_B/B$. Since these are independent of the calibration factors $\alpha$ and $\beta$ (assuming that the spectrograph background is sky dominated), the evolution of $\sigma_\nu/\nu$ during a spectroscopic exposure is also independent of the calibration. However, the accumulation of $\nu$ does depend on both $\alpha$ and $\beta$ so we consider here the contributions to these calibration factors and how they might contribute additional errors to the exposure-time calculation.
+
+The calibration factor $\alpha$ gives the total signal figure of merit (in units detected electrons) corresponding to the guide-star flux $f$ assuming no losses due to atmospheric transparency, $\epsilon\rightarrow 1$, or fiber acceptance, $A(w)\rightarrow 1$. Specifically, we can write:
+\begin{align}
+A(\overline{w}_i)^{-1} S_i &= t_{\text{loop}}\,\int d\lambda' F(\lambda')
+\int d\lambda R(\lambda,\lambda';\overline{w}_i) s(\lambda) \frac{K(\lambda)}{h c \lambda} 10^{-e(\lambda)X/2.5} \\
+\overline{\epsilon}_i f &= t_{\text{exp}}\,
+\int d\lambda F_\ast(\lambda) s_\ast(\lambda) \frac{K_\ast(\lambda)}{h c \lambda} 10^{-e(\lambda)X/2.5} \\
+f &= t_{\text{exp}}\,
+\int d\lambda F_\ast(\lambda) s_\ast(\lambda) \frac{K_\ast(\lambda)}{h c \lambda}
+\end{align}
+where $\lambda'$ is the observed wavelength after convolution by the resolution kernel $R$, $K$ ($K_\ast$) describes the overall throughput of the spectrograph (guider, not including the GFA filter), except for atmospheric extinction $e(\lambda)$ which we separate out, and $s(\lambda)$ ($s_\ast(\lambda)$) is the assumed target (guide star) SED. Both integrals are weighted by a filter function: $F$ defines the signal figure of merit for the observed spectrum and $F_\ast$ is the GFA filter, which is nominally a DECam R filter with 570--720 nm coverage.  The relevant integration times are the guide loop period $t_{\text{loop}}$ and the GFA exposure time $t_{\text{exp}}$. Finally, we can define the calibration factor $\alpha$ in terms of the integrals above as
+\begin{equation}
+\alpha = \left[A(\overline{w}_i)^{-1} S_i\right]\frac{[f]}{[\overline{\epsilon}_i f]} \; .
+\end{equation}
+In practice, the value of $\alpha$ will probably be determined by calibrating predicted figures of merit against their actual values calculated in previous exposures, rather than using the first-principles formulation outlined here.  Therefore our purpose in this section is only to identify possible sources of error that have not yet been considered.
+
+One possible issue is that the signal figure of merit is necessarily defined in terms of observed wavelength, after convolution by the spectrograph resolution, which changes with the PSF size $w_i$.  If $F(\lambda)$ is a broad function of $\lambda$, as would be appropriate for tracking Lyman-$\alpha$ forest targets, then the dependence of $\alpha$ on $w_i$ should be negligible. However, a figure of merit that integrates the observed signal over the FWHM of a narrow emission line, as would be appropriate for an ELG target, is much more sensitive to the PSF size since the line shape directly reflects the PSF size.
+
+We can include a possible systematic error in the assumed calibration factors by modifying \eqn{dnu} to read:
+\begin{equation}
+\frac{\sigma_\nu^2}{\nu^2} = \frac{r^2}{4} \left[\left(\frac{\sigma_B}{B}\right)^2 + \left(\frac{\sigma_\beta}{\beta}\right)^2\right]
++ \frac{(1+r)^2}{4} \left[\left(\frac{\sigma_S}{S}\right)^2 + \left(\frac{\sigma_\alpha}{\alpha}\right)^2\right]
+\label{eqn:calib_error}
+\end{equation}
+where we view $\sigma_\alpha$ and $\sigma_\beta$ as measures of systematic calibration uncertainties that do not vary randomly between guide exposures, and so do not average away like $n^{-1/2}$.
+
 \section{Summary}
 
 To summarize we present a few benchmark scenarios to illustrate the range of expected performance:
@@ -175,6 +205,16 @@ All of our scenarios assume $\sigma_T = 1.0^\circ$C, $A = 10^4$ pixels, in addit
 \includegraphics[width=5.5in]{project}
 \caption{Projected evolution of $B_i$ (blue), $4 S_i$ (red) and $\nu$ (green) during a 20-minute spectroscopic integration for the four scenarios described in the text. Note that $B_i$ and $4 S_i$ use the right-hand scale with a suppressed zero.  The factor of 4 scaling applied to $S_i$ was chosen arbitrarily to improve the clarity of the plots. All integrations are tracked to a target SNR of 10. Ranges on each curve show $\pm 1\sigma$.}
 \label{fig:project}
+\end{center}
+\end{figure}
+
+To account for possible systematic calibration errors we use \eqn{calib_error} with a 5\% error on $\alpha$ or a 10\% error on $\beta$. Since these errors are assumed not to be random, they do not average away with the large number of guide exposures and significantly degrade our ability to predict when the target $\nu$ has been reached: the completion windows are now enlarged to almost three minutes.
+
+\begin{figure}[htb]
+\begin{center}
+\includegraphics[width=5.5in]{calib_error}
+\caption{Projected evolution of $B_i$ (blue), $4 S_i$ (red) and $\nu$ (green) during a 20-minute spectroscopic integration. These calculations are identical to the baseline scenario of \fig{project}, but with the effects of calibration errors included.  The left-hand plot uses $\sigma_\alpha/\alpha = 0.05$ and the right-hand plot uses a larger error $\sigma_\beta/\beta = 0.10$ that gives a comparable error on $\sigma_\nu/\nu$.}
+\label{fig:calib_error}
 \end{center}
 \end{figure}
 
