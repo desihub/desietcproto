@@ -184,13 +184,33 @@ In practice, the value of $\alpha$ will probably be determined by calibrating pr
 
 One possible issue is that the signal figure of merit is necessarily defined in terms of observed wavelength, after convolution by the spectrograph resolution, which changes with the PSF size $w_i$.  If $F(\lambda)$ is a broad function of $\lambda$, as would be appropriate for tracking Lyman-$\alpha$ forest targets, then the dependence of $\alpha$ on $w_i$ should be negligible. However, a figure of merit that integrates the observed signal over the FWHM of a narrow emission line, as would be appropriate for an ELG target, is much more sensitive to the PSF size since the line shape directly reflects the PSF size.
 
-We can include a possible systematic error in the assumed calibration factors by modifying \eqn{dnu} to read:
+We can include a possible systematic error in the assumed calibration
+factors by modifying \eqn{snr-bglim2} to read:
+
 \begin{equation}
-\frac{\sigma_\nu^2}{\nu^2} = \frac{r^2}{4} \left[\left(\frac{\sigma_B}{B}\right)^2 + \left(\frac{\sigma_\beta}{\beta}\right)^2\right]
-+ \frac{(1+r)^2}{4} \left[\left(\frac{\sigma_S}{S}\right)^2 + \left(\frac{\sigma_\alpha}{\alpha}\right)^2\right]
-\label{eqn:calib_error}
+\frac{\sigma_\nu^2}{\nu^2} \simeq \frac{1}{n}\left[
+\frac{1}{4} \left(\frac{\sigma_B}{B}\right)^2 +
+\left(\frac{\sigma_S}{S}\right)^2\right] + 
+\left[
+\frac{1}{4} \left(\frac{\sigma_\beta}{\beta}\right)^2 +
+\left(\frac{\sigma_\alpha}{\alpha}\right)^2\right]
+\; .
+\label{eqn:snr-bglim2}
 \end{equation}
 where we view $\sigma_\alpha$ and $\sigma_\beta$ as measures of systematic calibration uncertainties that do not vary randomly between guide exposures, and so do not average away like $n^{-1/2}$.
+
+An important source of calibration uncertainty is systematic error in
+temperature. So far we assumed we measure the temperature with error
+$\sigma_T$, but in fact, a more likely scenario is a negligible
+$\sigma_T$, but temperature which is systematically offset by $\Delta T$. This
+offset can be calibrated to be zero over long periods of time, but
+will is likely non-negligible during any one exposure (for example,
+due to environment warming up, etc.). Such error would be given by
+\begin{equation}
+  \frac{\sigma_\beta}{\beta} = \frac{D'(\bar{T})\Delta T}{B}
+\end{equation}
+This error does not average down neither with pixels nor with time!
+
 
 \section{Summary}
 
