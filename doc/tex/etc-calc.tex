@@ -4,6 +4,7 @@
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{gensymb}
 
 \title{DESI Online Exposure Time Calculator Forecasts\\
 {\Large DESI-doc-1100-v1}}
@@ -185,7 +186,7 @@ In practice, the value of $\alpha$ will probably be determined by calibrating pr
 One possible issue is that the signal figure of merit is necessarily defined in terms of observed wavelength, after convolution by the spectrograph resolution, which changes with the PSF size $w_i$.  If $F(\lambda)$ is a broad function of $\lambda$, as would be appropriate for tracking Lyman-$\alpha$ forest targets, then the dependence of $\alpha$ on $w_i$ should be negligible. However, a figure of merit that integrates the observed signal over the FWHM of a narrow emission line, as would be appropriate for an ELG target, is much more sensitive to the PSF size since the line shape directly reflects the PSF size.
 
 We can include a possible systematic error in the assumed calibration
-factors by modifying \eqn{snr-bglim2} to read:
+factors by modifying \eqn{snr-bglim} to read:
 
 \begin{equation}
 \frac{\sigma_\nu^2}{\nu^2} \simeq \frac{1}{n}\left[
@@ -195,7 +196,7 @@ factors by modifying \eqn{snr-bglim2} to read:
 \frac{1}{4} \left(\frac{\sigma_\beta}{\beta}\right)^2 +
 \left(\frac{\sigma_\alpha}{\alpha}\right)^2\right]
 \; .
-\label{eqn:snr-bglim2}
+\label{eqn:calib_error}
 \end{equation}
 where we view $\sigma_\alpha$ and $\sigma_\beta$ as measures of systematic calibration uncertainties that do not vary randomly between guide exposures, and so do not average away like $n^{-1/2}$.
 
@@ -207,12 +208,23 @@ offset can be calibrated to be zero over long periods of time, but
 will is likely non-negligible during any one exposure (for example,
 due to environment warming up, etc.). Such error would be given by
 \begin{equation}
-  \frac{\sigma_\beta}{\beta} = \frac{D'(\bar{T})\Delta T}{B}
+  \frac{\sigma_\beta}{\beta} = \frac{D'(\bar{T})\Delta T}{B} \sim
+  \left(\frac{\Delta T}{0.1\degree {\rm C}} \right)
 \end{equation}
-This error does not average down neither with pixels nor with time!
+Another source of error is scatter introduced by sky-lines present in
+the $r$-band. These introduce an error of (see DESI-doc-1232):
+
+\begin{equation}
+  \frac{\sigma_\beta}{\beta} \sim 0.07 
+\end{equation}
+
+These two errors contribute to the total error in ability to predict
+time to completion to around two minutes on a 15 minute nominal exposure. 
 
 
 \section{Summary}
+
+(somewhat out of date)
 
 To summarize we present a few benchmark scenarios to illustrate the range of expected performance:
 \begin{enumerate}
@@ -231,7 +243,13 @@ All of our scenarios assume $\sigma_T = 1.0^\circ$C, $A = 10^4$ pixels, in addit
 \end{center}
 \end{figure}
 
-To account for possible systematic calibration errors we use \eqn{calib_error} with a 5\% error on $\alpha$ or a 10\% error on $\beta$. Since these errors are assumed not to be random, they do not average away with the large number of guide exposures and significantly degrade our ability to predict when the target $\nu$ has been reached: the completion windows are now enlarged to almost three minutes.
+To account for possible systematic calibration errors we use
+\eqn{calib_error} with a 5\% error on $\alpha$ or a 10\% error on
+$\beta$. Since these errors are assumed not to be random, they do not
+average away with the large number of guide exposures and
+significantly degrade our ability to predict when the target $\nu$ has
+been reached: the completion windows are now enlarged to almost three
+minutes.
 
 \begin{figure}[htb]
 \begin{center}
