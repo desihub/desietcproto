@@ -14,5 +14,8 @@ import scipy
 
 
 class ETCGuiderPack:
-    def __init__(self):
-        pass
+    def __init__(self, starpostages, skypostages, Tccd):
+        self.stars=starpostages
+        self.skies=skypostages
+        self.Tccd=Tccd
+        
