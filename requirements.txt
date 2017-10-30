@@ -1,1 +1,5 @@
 git+https://github.com/desihub/desiutil@1.9.3#egg=desiutil
+setuptools
+numpy
+# use sklearn for rapid prototyping but remove this dependency later
+sklearn
