@@ -1,0 +1,28 @@
+[run]
+source = py/desietc
+omit =
+   py/desietc/_version.py
+   py/desietc/conftest*
+   py/desietc/cython_version*
+   py/desietc/setup_package*
+   py/desietc/*/setup_package*
+   py/desietc/*/*/setup_package*
+   py/desietc/sphinx/*
+   py/desietc/test/*
+   py/desietc/*/test/*
+   py/desietc/*/*/test/*
+
+[report]
+exclude_lines =
+   # Have to re-enable the standard pragma
+   pragma: no cover
+
+   # Don't complain about packages we have installed
+   except ImportError
+
+   # Don't complain if tests don't hit assertions
+   raise AssertionError
+   raise NotImplementedError
+
+   # Don't complain about script hooks
+   def main\(.*\):
