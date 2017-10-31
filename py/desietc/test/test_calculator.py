@@ -13,3 +13,5 @@ class TestConfig(unittest.TestCase):
             1.0, 0.5, 2000.,
             1.0, 0.5, 2000.,
             0., 10.)
+        calc.update_signal(1000., 1., 0.1)
+        calc.update_background(900., 0.5, 0.2)
