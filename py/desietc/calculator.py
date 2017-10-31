@@ -2,6 +2,9 @@
 """
 from __future__ import print_function, division
 
+import numpy as np
+
+
 class Calculator(object):
     """Create a new calculator object for a single spectrograph exposure.
 
@@ -70,4 +73,48 @@ class Calculator(object):
     def __init__(self, alpha, dalpha, beta, dbeta,
                  sig0, dsig0, tsig0, bg0, dbg0, tbg0,
                  t0, snr_goal, dtmax=5000., npred=1000):
+        # Remember the exposure start time and SNR goal.
+        self.t0 = t0
+        assert snr_goal > 0
+        self.snr_goal = snr_goal
+        # Remember calibration constants.
+        assert alpha > 0 and dalpha >= 0, 'Invalid alpha, dalpha'
+        assert beta > 0 and dbeta >= 0, 'Invalid beta, dbeta'
+        self.alpha = alpha
+        self.beta = beta
+        self.dalpha2frac = (dalpha / alpha) ** 2
+        self.dbeta2frac = (dbeta / beta) ** 2
+        # Remember priors.
+        assert sig0 > 0 and dsig0 > 0, 'Invalid sig0, dsig0'
+        assert bg0 > 0 and dbg0 > 0, 'Invalid bg0, dbg0'
+        assert tsig0 > 0 and tbg0 > 0, 'Invalid tsig0, tbg0'
+        self.sig0 = sig0
+        self.dsig0 = dsig0
+        self.bg0 = bg0
+        self.dbg0 = dbg0
+        self.tsig0 = tsig0
+        self.tbg0 = tbg0
+        # Initialize uncalibrated signal and background rate estimates.
+        self.sig = []
+        self.dsig = []
+        self.dtsig = []
+        self.bg = []
+        self.dbg = []
+        self.dtbg = []
+        # Initialize times relative to t0 where model is predicted.
+        self.dt_pred = np.linspace(0., dtmax, npred)
+        # Initialize models and our prediction.
+        self.sig_pred, self.dsig_pred, self.sig_model = self._update_model(
+            [], [], [], self.sig0, self.dsig0, self.tsig0)
+        self.bg_pred, self.dbg_pred, self.bg_model = self._update_model(
+            [], [], [], self.bg0, self.dbg0, self.tbg0)
+        self._update_snr()
+
+    def _update_model(self, dt, rate, drate, rate0, drate0, smoothness):
+        """Update rate model"""
+        return None, None, None
+
+    def _update_snr(self):
+        """Update values of snr_now and t_remain using _update_model() results.
+        """
         pass
