@@ -19,11 +19,11 @@ class Calculator(object):
     rate estimates are assumed to be statistically independent.
 
     The target SNR is calculated as :math:`S/\sqrt(S+B)` where
-    :math:`S = \\alpha s` and :math:`\B = \\beta b` are calibrated versions of
+    :math:`S = \\alpha s` and :math:`B = \\beta b` are calibrated versions of
     the estimates :math:`s` and :math:`b` passed to :meth:`update_signal` and
     :meth:`update_background`.  The dimensions of :math:`a`, :math:`b`,
     :math:`\\alpha`, and :math:`\\beta` are arbitrary, but the combinations
-    :math:`S = \\alpha s` and :math:`\B = \\beta b` must be dimensionless and
+    :math:`S = \\alpha s` and :math:`B = \\beta b` must be dimensionless and
     scaled appropriately to have counting statistics.
 
     The calibration constants :math:`\\alpha`, and :math:`\\beta` can have
