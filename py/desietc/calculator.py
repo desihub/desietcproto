@@ -20,6 +20,9 @@ class Calculator(object):
     gradually replaced by actual rate updates.  The signal and background
     rate estimates are assumed to be statistically independent.
 
+    Use :meth:`will_timeout`, :meth:`get_snr_now` and :meth:`get_remaining` to
+    query the latest models.
+
     The target SNR is calculated as :math:`S/\sqrt(S+B)` where
     :math:`S = \\alpha s` and :math:`B = \\beta b` are calibrated versions of
     the estimates :math:`s` and :math:`b` passed to :meth:`update_signal` and
@@ -71,10 +74,13 @@ class Calculator(object):
     npred : int
         Number of equally spaced times spanning [0, dtmax] where predictions
         are calculated internally.
+    seed : int or None
+        Random number seed to use for reproducible random sampling of the
+        signal and background rate models.
     """
     def __init__(self, alpha, dalpha, beta, dbeta,
                  sig0, dsig0, tcorr_sig, bg0, dbg0, tcorr_bg,
-                 t0, snr_goal, dtmax=5000., npred=1000):
+                 t0, snr_goal, dtmax=5000., npred=1000, seed=None):
         # Remember the exposure start time and SNR goal.
         self.t0 = t0
         assert snr_goal > 0
@@ -84,8 +90,8 @@ class Calculator(object):
         assert beta > 0 and dbeta >= 0, 'Invalid beta, dbeta'
         self.alpha = alpha
         self.beta = beta
-        self.dalpha2frac = (dalpha / alpha) ** 2
-        self.dbeta2frac = (dbeta / beta) ** 2
+        self.dalpha = dalpha
+        self.dbeta = dbeta
         # Remember priors.
         assert sig0 > 0 and dsig0 > 0, 'Invalid sig0, dsig0'
         assert bg0 > 0 and dbg0 > 0, 'Invalid bg0, dbg0'
@@ -105,6 +111,8 @@ class Calculator(object):
         self.dtbg = []
         # Initialize times relative to t0 where model is predicted.
         self.dt_pred = np.linspace(0., dtmax, npred)
+        # Initialize random numbers.
+        self.gen = np.random.RandomState(seed)
         # Initialize models and our prediction.
         self.sig_pred, self.dsig_pred, self.sig_model = self._update_model(
             [], [], [], self.sig0, self.dsig0, self.tcorr_sig)
@@ -168,6 +176,65 @@ class Calculator(object):
         # Update estimates of calibrated SNR.
         self._update_snr()
 
+    def will_timeout(self):
+        """Is this exposure expected to time out before reaching its goal SNR?
+
+        Based on all signal and background rate updates recorded so far.
+
+        Returns
+        -------
+        bool
+            True if the current exposure is not expected to achieve ``snr_goal``
+            with an exposure duration less than ``dtmax``.
+        """
+        return self.dt_goal >= self.dt_pred[-1]
+
+    def get_remaining(self, tnow):
+        """Forecast the remaining exposure time in seconds.
+
+        Based on all signal and background rate updates recorded so far.
+
+        Parameters
+        ----------
+        tnow : float
+            Current time used for forecasting.  Must be >= t0.
+
+        Returns
+        -------
+        float
+            Remaining time in seconds, which might be < 0 if the goal SNR
+            has already been achieved.
+        """
+        assert tnow >= self.t0, 'Expected tnow >= t0'
+        return self.dt_goal - (tnow - self.t0)
+
+    def get_snr_now(self, tnow, CL=0.6827):
+        """Estimate the current integrated SNR.
+
+        Based on all signal and background rate updates recorded so far.
+
+        Parameters
+        ----------
+        tnow : float
+            Current time used for forecasting.  Must be >= t0.
+        CL : float
+            Confidence level to use for the returned range.  Must be 0-1.
+
+        Returns
+        -------
+        tuple
+            Tuple (lo, hi) containing the true integrated SNR with posterior
+            probability CL.
+        """
+        assert tnow >= self.t0, 'Expected tnow >= t0'
+        assert 0 < CL < 1, 'Invalid CL'
+        # Linearly interpolate SNR models to now.
+        snr_now = np.interp(tnow - self.t0, self.dt_pred, self.snr_samples)
+        # Estimate percentiles that cover a central fraction CL.
+        lo = 50 * (1.0 - CL)
+        cuts = (lo, 100 - lo)
+        return np.percentile(snr_now, cuts)
+
     def _update_model(self, dt, rate, drate, rate0, drate0, tcorr):
         """Internal method to update a rate model.
 
@@ -202,7 +269,7 @@ class Calculator(object):
         tuple
             Tuple (pred, dpred, gp) where pred and dpred are arrays of predicted
             rates and their 1-sigma errors for each elapsed time in
-            ``self.dt_steps``, and ``gp`` is the updated Gaussian process model.
+            ``self.dt_pred``, and ``gp`` is the updated Gaussian process model.
         """
         dt = np.asarray(dt)
         rate = np.asarray(rate)
@@ -222,7 +289,94 @@ class Calculator(object):
         pred += rate0
         return pred, dpred, gp
 
-    def _update_snr(self):
-        """Internal method to update values of snr_now and t_remain.
+    def _eval_snr(self, t, S, B):
+        """Evaluate the SNR for calibrated rates S and B at increasing times t.
+
+        Automatically broadcasts over input arrays whose last index corresponds
+        to time.
+
+        Parameters
+        ----------
+        t : array
+            1D array of N increasing times in seconds.
+        S : array
+            Array with shape (...,N) of calibrated signal rates in counts per
+            second at each time.
+        B : array
+            Array with shape (...,N) of calibrated background rates  in counts
+            per second at each time.
+
+        Returns
+        -------
+        array
+            Array with shape (...,N) of cummulative signal-to-noise ratios at
+            each time calculated as :math:`S / np.sqrt(S + B)`.  Any time when
+            :math:`S+B \le 0` will have SNR = 0.
         """
-        pass
+        assert len(t.shape) == 1, 't must be 1D array'
+        # Use trapezoid rule to integrate cummulatively over each interval.
+        tstep = np.diff(t)
+        assert np.all(tstep > 0)
+        assert S.shape == B.shape, 'S, B must have same shape'
+        Scum = np.cumsum(0.5 * tstep * (S[...,:-1] + S[...,1:]), axis=-1)
+        Bcum = np.cumsum(0.5 * tstep * (B[...,:-1] + B[...,1:]), axis=-1)
+        snr = np.zeros_like(S)
+        nonzero = Scum + Bcum > 0
+        snr[...,1:][...,nonzero] = Scum[nonzero] / np.sqrt(
+            Scum[nonzero] + Bcum[nonzero])
+        return snr
+
+    def _update_snr(self, nsamples=1000):
+        """Internal method to update SNR forecast.
+
+        Uses the the most recent updates to the signal and background models
+        to forecast the calibrated SNR out to ``dtmax``.  This forecast is
+        then used to estimate the current SNR and the time remaining until
+        ``snr_goal`` is achieved.
+
+        Sets the flag ``attr:timeout`` if the updated model indicates that
+        this exposure will not complete before ``dtmax`` is reached.
+
+        Parameters
+        ----------
+        nsamples : int
+            Number of random samples of the signal and background rate models
+            to generate to estimate the range returned by :meth:`get_snr_now`.
+            A larger number gives more accurate ranges but takes longer to
+            generate.
+        """
+        # Calculate nominal calibrated signal and background rates.
+        S = self.alpha * np.asarray(self.sig_pred)
+        B = self.beta * np.asarray(self.bg_pred)
+
+        # Evaluate the corresponding nominal SNR model.
+        snr = self._eval_snr(self.dt_pred, S, B)
+        assert np.all(np.diff(snr) >= 0), 'nominal SNR is not increasing'
+
+        # Estimate when the nominal SNR model hits the SNR goal using
+        # linear interpolation.
+        # If the result equals self.dt_pred[-1], this indicates that
+        # the exposure is not expected to reach its SNR goal within the
+        # maximum allowed exposure time.
+        self.dt_goal = np.interp(self.snr_goal, snr, self.dt_pred)
+
+        # Generate random realizations of uncalibrated signal, bg rates
+        # from the latest Gaussian process rate models.
+        X = self.dt_pred.reshape(-1, 1)
+        S_samples = (self.sig0 + self.sig_model.sample_y(X, nsamples)).T
+        B_samples = (self.bg0 + self.bg_model.sample_y(X, nsamples)).T
+
+        # Apply calibration with random errors.
+        if self.dalpha > 0:
+            S_samples *= self.gen.normal(
+                loc=self.alpha, scale=self.dalpha, size=nsamples)
+        else:
+            S_samples *= self.alpha
+        if self.dbeta > 0:
+            B_samples *= self.gen.normal(
+                loc=self.beta, scale=self.dbeta, size=nsamples)
+        else:
+            B_samples *= self.beta
+
+        # Calcuate SNR for each (S,B) pair.
+        self.snr_samples = self._eval_snr(self.dt_pred, S_samples, B_samples)
