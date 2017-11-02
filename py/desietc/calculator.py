@@ -4,6 +4,8 @@ from __future__ import print_function, division
 
 import numpy as np
 
+import scipy.interpolate
+
 import sklearn.gaussian_process
 
 
@@ -74,17 +76,23 @@ class Calculator(object):
     npred : int
         Number of equally spaced times spanning [0, dtmax] where predictions
         are calculated internally.
+    nsamples : int
+        Number of random samples of the signal and background rate models
+        to generate to estimate the range returned by :meth:`get_snr_now`.
+        A larger number gives more accurate ranges but takes longer to
+        generate.
     seed : int or None
         Random number seed to use for reproducible random sampling of the
         signal and background rate models.
     """
     def __init__(self, alpha, dalpha, beta, dbeta,
-                 sig0, dsig0, tcorr_sig, bg0, dbg0, tcorr_bg,
-                 t0, snr_goal, dtmax=5000., npred=1000, seed=None):
-        # Remember the exposure start time and SNR goal.
+                 sig0, dsig0, tcorr_sig, bg0, dbg0, tcorr_bg, t0, snr_goal,
+                 dtmax=4000., npred=400, nsamples=1000, seed=None):
         self.t0 = t0
         assert snr_goal > 0
         self.snr_goal = snr_goal
+        assert nsamples > 0
+        self.nsamples = nsamples
         # Remember calibration constants.
         assert alpha > 0 and dalpha >= 0, 'Invalid alpha, dalpha'
         assert beta > 0 and dbeta >= 0, 'Invalid beta, dbeta'
@@ -326,7 +334,7 @@ class Calculator(object):
             Scum[nonzero] + Bcum[nonzero])
         return snr
 
-    def _update_snr(self, nsamples=1000):
+    def _update_snr(self):
         """Internal method to update SNR forecast.
 
         Uses the the most recent updates to the signal and background models
@@ -336,14 +344,6 @@ class Calculator(object):
 
         Sets the flag ``attr:timeout`` if the updated model indicates that
         this exposure will not complete before ``dtmax`` is reached.
-
-        Parameters
-        ----------
-        nsamples : int
-            Number of random samples of the signal and background rate models
-            to generate to estimate the range returned by :meth:`get_snr_now`.
-            A larger number gives more accurate ranges but takes longer to
-            generate.
         """
         # Calculate nominal calibrated signal and background rates.
         S = self.alpha * np.asarray(self.sig_pred)
@@ -358,23 +358,26 @@ class Calculator(object):
         # If the result equals self.dt_pred[-1], this indicates that
         # the exposure is not expected to reach its SNR goal within the
         # maximum allowed exposure time.
-        self.dt_goal = np.interp(self.snr_goal, snr, self.dt_pred)
+        interpolator = scipy.interpolate.interp1d(
+            snr, self.dt_pred, kind='cubic', assume_sorted=True,
+            bounds_error=False, fill_value=self.dt_pred[-1])
+        self.dt_goal = interpolator(self.snr_goal)
 
         # Generate random realizations of uncalibrated signal, bg rates
         # from the latest Gaussian process rate models.
         X = self.dt_pred.reshape(-1, 1)
-        S_samples = (self.sig0 + self.sig_model.sample_y(X, nsamples)).T
-        B_samples = (self.bg0 + self.bg_model.sample_y(X, nsamples)).T
+        S_samples = (self.sig0 + self.sig_model.sample_y(X, self.nsamples)).T
+        B_samples = (self.bg0 + self.bg_model.sample_y(X, self.nsamples)).T
 
         # Apply calibration with random errors.
         if self.dalpha > 0:
             S_samples *= self.gen.normal(
-                loc=self.alpha, scale=self.dalpha, size=nsamples)
+                loc=self.alpha, scale=self.dalpha, size=(self.nsamples, 1))
         else:
             S_samples *= self.alpha
         if self.dbeta > 0:
             B_samples *= self.gen.normal(
-                loc=self.beta, scale=self.dbeta, size=nsamples)
+                loc=self.beta, scale=self.dbeta, size=(self.nsamples, 1))
         else:
             B_samples *= self.beta
 
