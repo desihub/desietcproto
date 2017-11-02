@@ -87,7 +87,7 @@ class Calculator(object):
     """
     def __init__(self, alpha, dalpha, beta, dbeta,
                  sig0, dsig0, tcorr_sig, bg0, dbg0, tcorr_bg, t0, snr_goal,
-                 dtmax=4000., npred=400, nsamples=1000, seed=None):
+                 dtmax=4000., npred=401, nsamples=1000, seed=None):
         self.t0 = t0
         assert snr_goal > 0
         self.snr_goal = snr_goal
@@ -237,11 +237,16 @@ class Calculator(object):
         assert tnow >= self.t0, 'Expected tnow >= t0'
         assert 0 < CL < 1, 'Invalid CL'
         # Linearly interpolate SNR models to now.
-        snr_now = np.interp(tnow - self.t0, self.dt_pred, self.snr_samples)
+        interpolator = scipy.interpolate.interp1d(
+            self.dt_pred, self.snr_samples, kind='linear', assume_sorted=True)
+        self.snr_now = interpolator(tnow - self.t0)
+        assert self.snr_now.shape == (self.nsamples,)
+        #snr_now = np.interp(tnow - self.t0, self.dt_pred, self.snr_samples)
         # Estimate percentiles that cover a central fraction CL.
         lo = 50 * (1.0 - CL)
         cuts = (lo, 100 - lo)
-        return np.percentile(snr_now, cuts)
+        assert np.allclose(cuts[1] - cuts[0], 100 * CL)
+        return np.percentile(self.snr_now, cuts)
 
     def _update_model(self, dt, rate, drate, rate0, drate0, tcorr):
         """Internal method to update a rate model.
@@ -366,20 +371,23 @@ class Calculator(object):
         # Generate random realizations of uncalibrated signal, bg rates
         # from the latest Gaussian process rate models.
         X = self.dt_pred.reshape(-1, 1)
-        S_samples = (self.sig0 + self.sig_model.sample_y(X, self.nsamples)).T
-        B_samples = (self.bg0 + self.bg_model.sample_y(X, self.nsamples)).T
+        self.S_samples = (
+            self.sig0 + self.sig_model.sample_y(X, self.nsamples)).T
+        self.B_samples = (
+            self.bg0 + self.bg_model.sample_y(X, self.nsamples)).T
 
         # Apply calibration with random errors.
         if self.dalpha > 0:
-            S_samples *= self.gen.normal(
+            self.S_samples *= self.gen.normal(
                 loc=self.alpha, scale=self.dalpha, size=(self.nsamples, 1))
         else:
-            S_samples *= self.alpha
+            self.S_samples *= self.alpha
         if self.dbeta > 0:
-            B_samples *= self.gen.normal(
+            self.B_samples *= self.gen.normal(
                 loc=self.beta, scale=self.dbeta, size=(self.nsamples, 1))
         else:
-            B_samples *= self.beta
+            self.B_samples *= self.beta
 
         # Calcuate SNR for each (S,B) pair.
-        self.snr_samples = self._eval_snr(self.dt_pred, S_samples, B_samples)
+        self.snr_samples = self._eval_snr(
+            self.dt_pred, self.S_samples, self.B_samples)
