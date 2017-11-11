@@ -130,7 +130,8 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
     ax[2].annotate(label, xy, xy, 'axes fraction', 'axes fraction',
                    horizontalalignment='right', fontsize=24)
 
-    plt.subplots_adjust(hspace=0.05, left=0.05, right=)
+    plt.subplots_adjust(
+        hspace=0.05, left=0.10, right=0.96, bottom=0.05, top=0.98)
     if save:
         plt.savefig(save)
     return fig, ax
