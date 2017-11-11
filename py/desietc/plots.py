@@ -12,6 +12,14 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
 
     Parameters
     ----------
+    calc : :class:`desietc.calculator.Calculator`
+        Calculator object to use for plotting.
+    tnow : float
+        Current time for plotting in seconds. Must be between the calculator's
+        t0 and t0+dtmax values.
+    nsigma : float
+        Number of sigmas for plotting filled ranges of the predicted signal
+        and background rates.
     nsamples : int
         Number of random samples to plot on each graph.  No samples are
         plotted when zero. Must be >= 0.
@@ -26,6 +34,8 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
     """
     import matplotlib.pyplot as plt
 
+    assert tnow >= calc.t0, 'Expected tnow >= t0'
+    assert tnow <= calc.t0 + calc.dtmax, 'Expected tnow <= t0 + dtmax'
     assert nsamples >= 0, 'Expected nsamples >= 0'
 
     dt_now = tnow - calc.t0
