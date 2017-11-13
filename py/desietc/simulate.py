@@ -7,7 +7,7 @@ import numpy as np
 import desietc.calculator
 
 
-def simulate_measurements(dt_pred, interval=60, rel_accuracy=0.04,
+def simulate_measurements(dt_pred, interval, rel_accuracy,
                           initial=1., slope=0., gen=None):
     """Simulate a time series of signal or background rate measurements.
 
@@ -125,13 +125,13 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
         t0=t0, snr_goal=snr_goal, dtmax=dtmax, seed=seed)
     assert not calc.will_timeout()
 
-    # Generate background rate updates every 60s.
-    tbg, bg, dbg, bgtrue = simulate_measurements(
-        calc.dt_pred, bg_period, s0err, s0, 0., gen)
-
-    # Generate signal rate updates every 120s.
+    # Generate signal rate updates.
     tsig, sig, dsig, sigtrue = simulate_measurements(
-        calc.dt_pred, sig_period, b0err, b0, 0., gen)
+        calc.dt_pred, sig_period, s0err, s0, 0., gen)
+
+    # Generate background rate updates.
+    tbg, bg, dbg, bgtrue = simulate_measurements(
+        calc.dt_pred, bg_period, b0err, b0, 0., gen)
 
     # Calculate the true snr evolution.
     snr_true = calc._eval_snr(calc.dt_pred, alpha * sigtrue, beta * bgtrue)

@@ -35,7 +35,7 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
     import matplotlib.pyplot as plt
 
     assert tnow >= calc.t0, 'Expected tnow >= t0'
-    assert tnow <= calc.t0 + calc.dtmax, 'Expected tnow <= t0 + dtmax'
+    assert tnow <= calc.t0 + calc.dt_pred[-1], 'Expected tnow <= t0 + dtmax'
     assert nsamples >= 0, 'Expected nsamples >= 0'
 
     dt_now = tnow - calc.t0
@@ -117,9 +117,10 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
 
     # Add labels.
     def tfmt(s):
-        m = int(np.floor(s / 60.))
-        s -= 60 * m
-        return '{:d}:{:04.1f}'.format(m, s)
+        sabs, sign = np.abs(s), ('-' if s < 0 else '')
+        m = int(np.floor(sabs / 60.))
+        sabs -= 60 * m
+        return '{}{:d}:{:04.1f}'.format(sign, m, sabs)
 
     label = 'Elapsed: {}'.format(tfmt(dt_now))
     xy = 0.97, 0.20
@@ -133,5 +134,6 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
     plt.subplots_adjust(
         hspace=0.05, left=0.10, right=0.96, bottom=0.05, top=0.98)
     if save:
+        print('saving to', save)
         plt.savefig(save)
     return fig, ax
