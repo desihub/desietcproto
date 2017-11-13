@@ -49,8 +49,10 @@ def simulate_measurements(dt_pred, interval, rel_accuracy,
     return dt, rate, error, truth
 
 
-def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_err,
-                      sig_period=120., bg_period=60., etc_period=60., seed=123):
+def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err,
+                      beta_err, sprior=1., bprior=1., priorerr=0.5,
+                      estimate_snr=False, sig_period=120., bg_period=60.,
+                      etc_period=60., seed=123):
     """Simulate the ETC during a single exposure.
 
     Assume that the true signal and background rates are constant during the
@@ -76,6 +78,15 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
     beta_err : float
         Fractional RMS error of the signal calibration constant.
         Does not average down as rate estimates are accumulated.
+    sprior : float
+        Ratio of prior on signal rate and actual initial rate. Must be > 0.
+    bprior : float
+        Ratio of prior on background rate and actual initial rate. Must be > 0.
+    priorerr : float
+        Fractional error on the signal and background rate priors. Must be > 0.
+    estimate_snr : bool
+        Estimate SNR after each simulation step when True. Simulations are
+        faster but do not return snr_range values when False.
     sig_period : float
         Period for signal rate measurements in seconds.
     bg_period : float
@@ -90,8 +101,9 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
     Returns
     -------
     tuple
-        Tuple (S0,B0) of calibrated signal and background rates
-        in units of counts per second.
+        Tuple (calc, tnow, snr_actual, snr_true, telapsed, tremaining,
+        snr_range).  The snr_range array is empty when called with
+        estimate_snr False.
     """
     # Calculate the constant calibrated signal and background rates to
     # simulate in order to reach snr_goal at texp_goal given rho.
@@ -110,11 +122,11 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
 
     # Use rate priors that differ from the true rates with 25% rms.
     gen = np.random.RandomState(seed=seed)
-    s0prior = s0 * (1 + gen.normal(scale=0.25))
-    b0prior = b0 * (1 + gen.normal(scale=0.25))
+    s0prior = s0 * sprior
+    b0prior = b0 * bprior
     # Assign 50% error to the priors.
-    ds0prior = 0.5 * s0prior
-    db0prior = 0.5 * b0prior
+    ds0prior = priorerr * s0prior
+    db0prior = priorerr * b0prior
     # Fix correlation times of 500s, 1500s.
     stcorr, btcorr = 500., 1500.
 
@@ -139,12 +151,15 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
     # Record the initial forecast (based only the priors).
     telapsed = [0.]
     tremaining = [calc.get_remaining(t0)]
-    snr_range = [calc.get_snr_now(t0)]
+    if estimate_snr:
+        snr_range = [calc.get_snr_now(t0)]
+    else:
+        snr_range = []
 
     # Loop over simulated time steps.
     tnow = t0
     isig, ibg = 0, 0
-    while calc.get_remaining(tnow) > 0:
+    while calc.get_remaining(tnow) > 0.01:
         # Update the simulation time.
         tnow += min(etc_period, calc.get_remaining(tnow))
         # Add any signal or background updates during this step.
@@ -157,10 +172,11 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
         # Record the new forecast.
         telapsed.append(tnow - t0)
         tremaining.append(calc.get_remaining(tnow))
-        snr_range.append(calc.get_snr_now(tnow))
+        if estimate_snr:
+            snr_range.append(calc.get_snr_now(tnow))
 
     # Calculate the true SNR when the exposure ends.
-    snr_actual = np.interp(tnow, calc.dt_pred, snr_true)
+    snr_actual = np.interp(tnow - t0, calc.dt_pred, snr_true)
 
     # Convert python arrays to numpy.
     telapsed = np.array(telapsed)
