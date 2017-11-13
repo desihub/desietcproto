@@ -106,7 +106,7 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
     s0, b0 = S0 / alpha, B0 / beta
     ds0, db0 = s0err * s0, b0err * b0
 
-    t0, dtmax = 0., 4000.
+    t0, dtmax = 1e6, 4000.
 
     # Use rate priors that differ from the true rates with 25% rms.
     gen = np.random.RandomState(seed=seed)
@@ -126,18 +126,18 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
     assert not calc.will_timeout()
 
     # Generate signal rate updates.
-    tsig, sig, dsig, sigtrue = simulate_measurements(
+    dtsig, sig, dsig, sigtrue = simulate_measurements(
         calc.dt_pred, sig_period, s0err, s0, 0., gen)
 
     # Generate background rate updates.
-    tbg, bg, dbg, bgtrue = simulate_measurements(
+    dtbg, bg, dbg, bgtrue = simulate_measurements(
         calc.dt_pred, bg_period, b0err, b0, 0., gen)
 
     # Calculate the true snr evolution.
     snr_true = calc._eval_snr(calc.dt_pred, alpha * sigtrue, beta * bgtrue)
 
     # Record the initial forecast (based only the priors).
-    telapsed = [t0]
+    telapsed = [0.]
     tremaining = [calc.get_remaining(t0)]
     snr_range = [calc.get_snr_now(t0)]
 
@@ -148,14 +148,14 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err, beta_er
         # Update the simulation time.
         tnow += min(etc_period, calc.get_remaining(tnow))
         # Add any signal or background updates during this step.
-        while tbg[ibg] <= tnow:
-            calc.update_background(tbg[ibg], bg[ibg], dbg[ibg])
+        while t0 + dtbg[ibg] <= tnow:
+            calc.update_background(t0 + dtbg[ibg], bg[ibg], dbg[ibg])
             ibg += 1
-        while tsig[isig] <= tnow:
-            calc.update_signal(tsig[isig], sig[isig], dsig[isig])
+        while t0 + dtsig[isig] <= tnow:
+            calc.update_signal(t0 + dtsig[isig], sig[isig], dsig[isig])
             isig += 1
         # Record the new forecast.
-        telapsed.append(tnow)
+        telapsed.append(tnow - t0)
         tremaining.append(calc.get_remaining(tnow))
         snr_range.append(calc.get_snr_now(tnow))
 

@@ -66,12 +66,18 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
     Sc_fill = np.concatenate([S - nsigma * dSc, (S + nsigma * dSc)[::-1]])
     Bc_fill = np.concatenate([B - nsigma * dBc, (B + nsigma * dBc)[::-1]])
 
+    # Generate random samples to plot, if requested.
+    if nsamples > 0:
+        S_samples, B_samples, snr_samples = calc.get_samples(
+            calc.dt_pred, nsamples)
+
     # Initialize the plot to fill an 8.5" x 11" page.
     fig, ax = plt.subplots(3, 1, figsize=(8.5, 11), sharex=True)
 
     # Plot signal rate data and model.
-    for S_sample in calc.S_samples[:nsamples]:
-        ax[0].plot(dt, S_sample, 'g--', lw=0.5)
+    if nsamples > 0:
+        for S_sample in S_samples:
+            ax[0].plot(dt, S_sample, 'g--', lw=0.5)
     ax[0].fill(dt_fill, Sc_fill, alpha=.15, fc='g', ec='None')
     ax[0].fill(dt_fill, S_fill, alpha=.25, fc='g', ec='None')
     ax[0].plot(dt, S, 'g-', alpha=0.5, lw=2)
@@ -85,8 +91,9 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
     ax[0].grid()
 
     # Plot background rate data and model.
-    for B_sample in calc.B_samples[:nsamples]:
-        ax[1].plot(dt, B_sample, 'b--', lw=0.5)
+    if nsamples > 0:
+        for B_sample in B_samples:
+            ax[1].plot(dt, B_sample, 'b--', lw=0.5)
     ax[1].fill(dt_fill, Bc_fill, alpha=.15, fc='b', ec='None')
     ax[1].fill(dt_fill, B_fill, alpha=.25, fc='b', ec='None')
     ax[1].plot(dt, B, 'b-')
@@ -100,8 +107,9 @@ def plot_calculator(calc, tnow, nsigma=1.0, nsamples=0, save=None):
     ax[1].grid()
 
     # Plot SNR predictions.
-    for snr_sample in calc.snr_samples[:nsamples]:
-        ax[2].plot(dt, snr_sample, 'k--', lw=0.5)
+    if nsamples > 0:
+        for snr_sample in snr_samples:
+            ax[2].plot(dt, snr_sample, 'k--', lw=0.5)
     ax[2].plot(dt, snr, '-', c='gray', lw=2)
     ax[2].errorbar(dt_now, 0.5 * (snr_lo + snr_hi),
                    yerr=0.5 * (snr_hi - snr_lo), fmt='k', lw=6, ms=0,

@@ -47,8 +47,7 @@ class TestCalculator(unittest.TestCase):
             for tcorr in (1e-2 * dtmax, 1e2 * dtmax):
                 calc = Calculator(
                     alpha, dalpha, beta, dbeta, sig0, dsig0, tcorr,
-                    bg0, dbg0, tcorr, t0, snr_goal,
-                    nsamples=10000, seed=123)
+                    bg0, dbg0, tcorr, t0, snr_goal, seed=123)
                 # Predict mean and stddev of initial samples.
                 Spred = alpha * sig0
                 dSpred = Spred * np.sqrt(
@@ -57,10 +56,12 @@ class TestCalculator(unittest.TestCase):
                 dBpred = Bpred * np.sqrt(
                     (dbeta / beta) ** 2 + (dbg0 / bg0) ** 2)
                 # Compare with numerical results at each time step.
-                Smean = np.mean(calc.S_samples, axis=0)
-                Sstd = np.std(calc.S_samples, axis=0)
-                Bmean = np.mean(calc.B_samples, axis=0)
-                Bstd = np.std(calc.B_samples, axis=0)
+                S_samples, B_samples, _ = calc.get_samples(
+                    calc.dt_pred, nsamples=10000)
+                Smean = np.mean(S_samples, axis=0)
+                Sstd = np.std(S_samples, axis=0)
+                Bmean = np.mean(B_samples, axis=0)
+                Bstd = np.std(B_samples, axis=0)
                 # Check the level of agreement.
                 assert np.allclose(Smean, Spred, rtol=0.01)
                 assert np.allclose(Bmean, Bpred, rtol=0.01)
@@ -82,7 +83,7 @@ class TestCalculator(unittest.TestCase):
         for tcorr in (1e-2 * dtmax, 1e2 * dtmax):
             calc = Calculator(
                 alpha, dalpha, beta, dbeta, sig0, dsig0, tcorr,
-                bg0, dbg0, tcorr, t0, snr_goal, nsamples=10000, seed=123)
+                bg0, dbg0, tcorr, t0, snr_goal, seed=123)
             # Update signal and background rate estimates.
             idx = len(calc.dt_pred) // 2
             tupdate = t0 + calc.dt_pred[idx]
@@ -96,10 +97,12 @@ class TestCalculator(unittest.TestCase):
             calc.update_signal(tupdate, sig, dsig)
             calc.update_background(tupdate, bg, dbg)
             # Calulate the predicted mean, std as a function of time.
-            Smean = np.mean(calc.S_samples, axis=0)
-            Sstd = np.std(calc.S_samples, axis=0)
-            Bmean = np.mean(calc.B_samples, axis=0)
-            Bstd = np.std(calc.B_samples, axis=0)
+            S_samples, B_samples, _ = calc.get_samples(
+                calc.dt_pred, nsamples=10000)
+            Smean = np.mean(S_samples, axis=0)
+            Sstd = np.std(S_samples, axis=0)
+            Bmean = np.mean(B_samples, axis=0)
+            Bstd = np.std(B_samples, axis=0)
             # Verify that predictions match the update at the update time.
             assert np.allclose(Smean[idx], Spred, rtol=0.01)
             assert np.allclose(Sstd[idx], dSpred, rtol=0.03)
