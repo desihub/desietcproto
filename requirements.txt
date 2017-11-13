@@ -4,3 +4,6 @@ numpy
 scipy
 # use sklearn for rapid prototyping but remove this dependency later
 sklearn
+# matplotlib only required to use desietc.plots so not really a package
+# dependency but I don't know how else to ensure that travis installs it.
+matplotlib

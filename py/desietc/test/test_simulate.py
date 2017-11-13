@@ -35,7 +35,7 @@ class TestSimulate(unittest.TestCase):
         gen1 = np.random.RandomState(123)
         dt1, rate1, error1, truth1 = simulate_measurements(
             dt_pred, interval, rel_accuracy, initial, slope, gen1)
-        gen2 = np.random.RandomState(321)
+        gen2 = None
         dt2, rate2, error2, truth2 = simulate_measurements(
             dt_pred, interval, rel_accuracy, initial, slope, gen2)
         assert np.array_equal(dt1, dt2)
