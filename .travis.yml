@@ -36,6 +36,10 @@ env:
         # overidden underneath. They are defined here in order to save having
         # to repeat them for all configurations.
         - MAIN_CMD='python setup.py'
+        # These packages will always be installed.
+        - CONDA_DEPENDENCIES=""
+        # These packages will only be installed if we really need them.
+        - CONDA_ALL_DEPENDENCIES="scipy matplotlib"
     matrix:
         - SETUP_CMD='egg_info'
         - SETUP_CMD='bdist_egg'
