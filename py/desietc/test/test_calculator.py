@@ -5,7 +5,7 @@ import unittest
 from ..calculator import *
 
 
-class TestConfig(unittest.TestCase):
+class TestCalculator(unittest.TestCase):
 
     def test_basic(self):
         """Test that we can create a calculator and add signal, bg"""
