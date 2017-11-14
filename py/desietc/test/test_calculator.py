@@ -41,7 +41,7 @@ class TestCalculator(unittest.TestCase):
         sig0, bg0 = 0.9, 1.1
         dsig0, dbg0 = 0.10, 0.15
         t0, snr_goal = 1e6, 10.
-        dbeta = 0.15
+        dbeta = 0.
         dtmax = 4000.
         gen = np.random.RandomState(seed=123)
         for dalpha in (0., 0.10):

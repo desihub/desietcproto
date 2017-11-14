@@ -49,4 +49,4 @@ class TestSimulate(unittest.TestCase):
         (calc, tnow, snr_actual, snr_true,
          telapsed, tremaining, snr_range) = simulate_exposure(
             snr_goal=7, texp_goal=1500, rho=1, s0err=0.1, b0err=0.05,
-            alpha_err=0.1, beta_err=0.1, gen=gen)
+            alpha_err=0.1, beta_err=0.1, estimate_snr=True)
