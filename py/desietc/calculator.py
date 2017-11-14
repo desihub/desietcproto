@@ -371,9 +371,9 @@ class Calculator(object):
         # from the latest Gaussian process rate models.
         X = dt.reshape(-1, 1)
         S_samples = (
-            self.sig0 + self.sig_model.sample_y(X, nsamples)).T
+            self.sig0 + self.sig_model.sample_y(X, nsamples, self.gen)).T
         B_samples = (
-            self.bg0 + self.bg_model.sample_y(X, nsamples)).T
+            self.bg0 + self.bg_model.sample_y(X, nsamples, self.gen)).T
 
         # Apply calibration with random errors.
         if self.dalpha > 0:
