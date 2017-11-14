@@ -52,7 +52,7 @@ def simulate_measurements(dt_pred, interval, rel_accuracy,
 def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err,
                       beta_err, sprior=1., bprior=1., priorerr=0.5,
                       estimate_snr=False, sig_period=120., bg_period=60.,
-                      etc_period=60., seed=123):
+                      etc_period=60., gen=None):
     """Simulate the ETC during a single exposure.
 
     Assume that the true signal and background rates are constant during the
@@ -95,8 +95,9 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err,
         Period for exposure-time calculator forecast updates in seconds.
         Should be the lowest-common multiple of sig_period and bg_period
         to avoid any discretization effects.
-    seed : int or None
-        Seed for reproducible random state.
+    gen : numpy.random.RandomState or None
+        Use the specified random number generator for reproducible
+        random samples. Ignored unless estimate_snr is True.
 
     Returns
     -------
@@ -105,6 +106,9 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err,
         snr_range).  The snr_range array is empty when called with
         estimate_snr False.
     """
+    if gen is None:
+        gen = np.random.RandomState()
+
     # Calculate the constant calibrated signal and background rates to
     # simulate in order to reach snr_goal at texp_goal given rho.
     B0 = snr_goal ** 2 / texp_goal * (1 + rho) / rho ** 2
@@ -121,7 +125,6 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err,
     t0, dtmax = 1e6, 4000.
 
     # Use rate priors that differ from the true rates with 25% rms.
-    gen = np.random.RandomState(seed=seed)
     s0prior = s0 * sprior
     b0prior = b0 * bprior
     # Assign 50% error to the priors.
@@ -134,7 +137,7 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err,
     calc = desietc.calculator.Calculator(
         alpha, dalpha, beta, dbeta,
         s0prior, ds0prior, stcorr, b0prior, db0prior, btcorr,
-        t0=t0, snr_goal=snr_goal, dtmax=dtmax, seed=seed)
+        t0=t0, snr_goal=snr_goal, dtmax=dtmax)
     assert not calc.will_timeout()
 
     # Generate signal rate updates.
@@ -152,7 +155,7 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err,
     telapsed = [0.]
     tremaining = [calc.get_remaining(t0)]
     if estimate_snr:
-        snr_range = [calc.get_snr_now(t0)]
+        snr_range = [calc.get_snr_now(t0, gen=gen)]
     else:
         snr_range = []
 
@@ -173,7 +176,7 @@ def simulate_exposure(snr_goal, texp_goal, rho, s0err, b0err, alpha_err,
         telapsed.append(tnow - t0)
         tremaining.append(calc.get_remaining(tnow))
         if estimate_snr:
-            snr_range.append(calc.get_snr_now(tnow))
+            snr_range.append(calc.get_snr_now(tnow, gen=gen))
 
     # Calculate the true SNR when the exposure ends.
     snr_actual = np.interp(tnow - t0, calc.dt_pred, snr_true)

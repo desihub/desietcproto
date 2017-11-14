@@ -76,13 +76,10 @@ class Calculator(object):
     npred : int
         Number of equally spaced times spanning [0, dtmax] where predictions
         are calculated internally.
-    seed : int or None
-        Random number seed to use for reproducible random sampling of the
-        signal and background rate models.
     """
     def __init__(self, alpha, dalpha, beta, dbeta,
                  sig0, dsig0, tcorr_sig, bg0, dbg0, tcorr_bg, t0, snr_goal,
-                 dtmax=4000., npred=401, seed=None):
+                 dtmax=4000., npred=401):
         self.t0 = t0
         assert snr_goal > 0
         self.snr_goal = snr_goal
@@ -112,8 +109,6 @@ class Calculator(object):
         self.dtbg = []
         # Initialize times relative to t0 where model is predicted.
         self.dt_pred = np.linspace(0., dtmax, npred)
-        # Initialize random numbers.
-        self.gen = np.random.RandomState(seed)
         # Initialize models and our prediction.
         self.sig_pred, self.dsig_pred, self.sig_model = self._update_model(
             [], [], [], self.sig0, self.dsig0, self.tcorr_sig)
@@ -209,7 +204,7 @@ class Calculator(object):
         assert tnow >= self.t0, 'Expected tnow >= t0'
         return self.dt_goal - (tnow - self.t0)
 
-    def get_snr_now(self, tnow, CL=0.6827, nsamples=1000):
+    def get_snr_now(self, tnow, CL=0.6827, nsamples=1000, gen=None):
         """Estimate the current integrated SNR.
 
         Based on all signal and background rate updates recorded so far.
@@ -227,6 +222,8 @@ class Calculator(object):
             Number of random samples of the signal and background rate models
             to generate. A larger number gives more accurate ranges but takes
             longer to run. Must be > 0.
+        gen : numpy.random.RandomState or None
+            Use the specified random number generator for reproducible results.
 
         Returns
         -------
@@ -245,7 +242,7 @@ class Calculator(object):
         dt = self.dt_pred[:last + 1].copy()
         dt[last] = tnow - self.t0
         # Generate random realizations of SNR at tnow.
-        _, _, snr_now = self.get_samples(dt, nsamples)
+        _, _, snr_now = self.get_samples(dt, nsamples, gen)
         assert snr_now.shape == (nsamples, last + 1)
         # Estimate percentiles that cover a central fraction CL.
         lo = 50 * (1.0 - CL)
@@ -344,7 +341,7 @@ class Calculator(object):
             Scum[nonzero] + Bcum[nonzero])
         return snr
 
-    def get_samples(self, dt, nsamples):
+    def get_samples(self, dt, nsamples, gen=None):
         """Generate random samples of our signal and background rate models.
 
         Parameters
@@ -355,6 +352,8 @@ class Calculator(object):
             between 0 and dtmax.
         nsamples : int
             Number of independent samples to generate. Must be > 0.
+        gen : numpy.random.RandomState or None
+            Use the specified random number generator for reproducible results.
 
         Returns
         -------
@@ -363,6 +362,8 @@ class Calculator(object):
             and the corresponding SNR values. Each is an array of floats with
             dimensions (nsamples, len(dt)).
         """
+        if gen is None:
+            gen = np.random.RandomState()
         dt = np.asarray(dt)
         assert (np.all(dt >= 0) and
                 np.all(dt <= self.dt_pred[-1])), 'dt not in range [0, dtmax]'
@@ -371,18 +372,18 @@ class Calculator(object):
         # from the latest Gaussian process rate models.
         X = dt.reshape(-1, 1)
         S_samples = (
-            self.sig0 + self.sig_model.sample_y(X, nsamples, self.gen)).T
+            self.sig0 + self.sig_model.sample_y(X, nsamples, gen)).T
         B_samples = (
-            self.bg0 + self.bg_model.sample_y(X, nsamples, self.gen)).T
+            self.bg0 + self.bg_model.sample_y(X, nsamples, gen)).T
 
         # Apply calibration with random errors.
         if self.dalpha > 0:
-            S_samples *= self.gen.normal(
+            S_samples *= gen.normal(
                 loc=self.alpha, scale=self.dalpha, size=(nsamples, 1))
         else:
             S_samples *= self.alpha
         if self.dbeta > 0:
-            B_samples *= self.gen.normal(
+            B_samples *= gen.normal(
                 loc=self.beta, scale=self.dbeta, size=(nsamples, 1))
         else:
             B_samples *= self.beta

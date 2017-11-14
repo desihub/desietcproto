@@ -29,7 +29,7 @@ class TestCalculator(unittest.TestCase):
                     for bg0 in (0.9, 1.1):
                         calc = Calculator(
                             alpha, 0, beta, 0, sig0, dsig0, tcorr,
-                            bg0, dbg0, tcorr, t0, snr_goal, seed=123)
+                            bg0, dbg0, tcorr, t0, snr_goal)
                         assert not calc.will_timeout()
                         tpred = snr_goal ** 2 * (
                             alpha * sig0 + beta * bg0) / (alpha * sig0) ** 2
@@ -43,11 +43,12 @@ class TestCalculator(unittest.TestCase):
         t0, snr_goal = 1e6, 10.
         dbeta = 0.15
         dtmax = 4000.
+        gen = np.random.RandomState(seed=123)
         for dalpha in (0., 0.10):
             for tcorr in (1e-2 * dtmax, 1e2 * dtmax):
                 calc = Calculator(
                     alpha, dalpha, beta, dbeta, sig0, dsig0, tcorr,
-                    bg0, dbg0, tcorr, t0, snr_goal, seed=123)
+                    bg0, dbg0, tcorr, t0, snr_goal)
                 # Predict mean and stddev of initial samples.
                 Spred = alpha * sig0
                 dSpred = Spred * np.sqrt(
@@ -57,7 +58,7 @@ class TestCalculator(unittest.TestCase):
                     (dbeta / beta) ** 2 + (dbg0 / bg0) ** 2)
                 # Compare with numerical results at each time step.
                 S_samples, B_samples, _ = calc.get_samples(
-                    calc.dt_pred, nsamples=10000)
+                    calc.dt_pred, nsamples=10000, gen=gen)
                 Smean = np.mean(S_samples, axis=0)
                 Sstd = np.std(S_samples, axis=0)
                 Bmean = np.mean(B_samples, axis=0)
@@ -75,6 +76,7 @@ class TestCalculator(unittest.TestCase):
         dsig0, dbg0 = 0.25, 0.25
         t0, snr_goal = 1e6, 10.
         dtmax = 4000.
+        gen = np.random.RandomState(seed=123)
         # Calculate predictions for S, B before any updates.
         Spred0 = alpha * sig0
         dSpred0 = Spred0 * np.sqrt((dalpha / alpha) ** 2 + (dsig0 / sig0) ** 2)
@@ -83,7 +85,7 @@ class TestCalculator(unittest.TestCase):
         for tcorr in (1e-2 * dtmax, 1e2 * dtmax):
             calc = Calculator(
                 alpha, dalpha, beta, dbeta, sig0, dsig0, tcorr,
-                bg0, dbg0, tcorr, t0, snr_goal, seed=123)
+                bg0, dbg0, tcorr, t0, snr_goal)
             # Update signal and background rate estimates.
             idx = len(calc.dt_pred) // 2
             tupdate = t0 + calc.dt_pred[idx]
@@ -98,7 +100,7 @@ class TestCalculator(unittest.TestCase):
             calc.update_background(tupdate, bg, dbg)
             # Calulate the predicted mean, std as a function of time.
             S_samples, B_samples, _ = calc.get_samples(
-                calc.dt_pred, nsamples=10000)
+                calc.dt_pred, nsamples=10000, gen=gen)
             Smean = np.mean(S_samples, axis=0)
             Sstd = np.std(S_samples, axis=0)
             Bmean = np.mean(B_samples, axis=0)
