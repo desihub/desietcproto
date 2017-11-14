@@ -131,7 +131,16 @@ napoleon_include_private_with_doc = True
 # This value contains a list of modules to be mocked up. This is useful when
 # some external dependencies are not met at build time and break the
 # building process.
-# autodoc_mock_imports = ['astropy', 'astropy.io']
+autodoc_mock_imports = ['astropy',
+                        'numpy',
+                        'scipy',
+                        'scipy.interpolate',
+                        'sklearn',
+                        'sklearn.gaussian_process',
+                        'matplotlib',
+                        'matplotlib.pyplot',
+                        'matplotlib.patches',
+                        ]
 
 # -- Options for HTML output ----------------------------------------------
 
