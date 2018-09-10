@@ -25,20 +25,32 @@ class Calculator(object):
     Use :meth:`will_timeout`, :meth:`get_snr_now` and :meth:`get_remaining` to
     query the latest models.
 
-    The target SNR is calculated as :math:`S/\sqrt(S+B)` where
-    :math:`S = \\alpha s` and :math:`B = \\beta b` are calibrated versions of
-    the estimates :math:`s` and :math:`b` passed to :meth:`update_signal` and
-    :meth:`update_background`.  The dimensions of :math:`a`, :math:`b`,
-    :math:`\\alpha`, and :math:`\\beta` are arbitrary, but the combinations
-    :math:`S = \\alpha s` and :math:`B = \\beta b` must be dimensionless and
-    scaled appropriately to have counting statistics.
+    The target SNR is calculated as 
 
-    The calibration constants :math:`\\alpha`, and :math:`\\beta` can have
+    .. math::
+
+        \nu(t) = \frac{S(t)}{\left(B(t) + S(t)\right)^{1/2}}
+
+    where
+
+    .. math::
+
+        S(t) = \alpha \, \int_{t_\text{open}}^{t}\, s(t)
+
+    is the estimated integrated signal rate :math:`s(t)` with calibration
+    :math:`\alpha` and
+
+    .. math::
+
+        B(t) = B_\text{read} + \beta\, \int_{t_\text{open}}^{t}\, b(t)
+
+    is the esimated integrated noise variance with a constant read-noise
+    offset :math:`B_\text{read}`, sky background rate :math:`b(t)` and
+    sky calibration :math:`\beta`.
+
+    The calibration constants :math:`\\alpha`, and :math:`\\beta` have
     associated errors, :math:`\\sigma_{\\alpha}` and :math:`\\sigma_{\\beta}`
-    that are propagated to SNR estimates. In general, the calibration depends
-    on the program (DARK, GRAY, BRIGHT) and can be refined by comparing this
-    object's predictions with the pipeline outputs from previous
-    spetrograph exposures.
+    that are propagated to SNR estimates.
 
     Parameters
     ----------
