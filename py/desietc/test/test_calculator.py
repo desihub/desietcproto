@@ -38,7 +38,7 @@ class TestCalculator(unittest.TestCase):
                             b = -(alpha * sig0 + beta * bg0) * snr_goal ** 2
                             c = -Bread * snr_goal ** 2
                             tpred = (-b + np.sqrt(b ** 2 - 4 * a * c)) / (2 * a)
-                            assert np.allclose(tpred, calc.get_remaining(t0))
+                            assert np.allclose(calc.get_remaining(t0), tpred, rtol=5e-3)
 
     def test_initial_samples(self):
         """Verify mean and RMS of initial samples"""

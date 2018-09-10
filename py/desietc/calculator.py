@@ -419,9 +419,6 @@ class Calculator(object):
         to forecast the calibrated SNR out to ``dtmax``.  This forecast is
         then used to estimate the current SNR and the time remaining until
         ``snr_goal`` is achieved.
-
-        Sets the flag ``attr:timeout`` if the updated model indicates that
-        this exposure will not complete before ``dtmax`` is reached.
         """
         # Calculate nominal calibrated signal and background rates.
         S = self.alpha * np.asarray(self.sig_pred)
@@ -429,14 +426,15 @@ class Calculator(object):
 
         # Evaluate the corresponding nominal SNR model.
         snr = self._eval_snr(self.dt_pred, S, B)
-        assert np.all(np.diff(snr) >= 0), 'nominal SNR is not increasing'
 
-        # Estimate when the nominal SNR model hits the SNR goal using
-        # linear interpolation.
-        # If the result equals self.dt_pred[-1], this indicates that
-        # the exposure is not expected to reach its SNR goal within the
-        # maximum allowed exposure time.
-        interpolator = scipy.interpolate.interp1d(
-            snr, self.dt_pred, kind='cubic', assume_sorted=True,
-            bounds_error=False, fill_value=self.dt_pred[-1])
-        self.dt_goal = interpolator(self.snr_goal)
+        # Do we ever reach the goal?
+        if np.max(snr) < self.snr_goal:
+            self.dt_goal = self.dt_pred[-1]
+        else:
+            # Find the earliest time that predicted snr exceeds our goal.
+            idx = np.argmax(snr >= self.snr_goal)
+            assert idx < len(self.dt_pred)
+            # Use linear interpolation to improve the estimated end time.
+            pair = slice(idx - 1, idx + 1)
+            self.dt_goal = np.interp(
+                self.snr_goal, snr[pair], self.dt_pred[pair])
