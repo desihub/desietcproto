@@ -13,6 +13,7 @@ class TestCalculator(unittest.TestCase):
             1., 0.1, 1., 0.1,
             1.0, 0.5, 2000.,
             1.0, 0.5, 2000.,
+            40000.,
             0., 10.)
         calc.update_signal(1000., 1., 0.1)
         calc.update_background(900., 0.5, 0.2)
@@ -27,19 +28,24 @@ class TestCalculator(unittest.TestCase):
             for beta in (0.5, 2.0):
                 for sig0 in (0.9, 1.1):
                     for bg0 in (0.9, 1.1):
-                        calc = Calculator(
-                            alpha, 0, beta, 0, sig0, dsig0, tcorr,
-                            bg0, dbg0, tcorr, t0, snr_goal)
-                        assert not calc.will_timeout()
-                        tpred = snr_goal ** 2 * (
-                            alpha * sig0 + beta * bg0) / (alpha * sig0) ** 2
-                        assert np.allclose(tpred, calc.get_remaining(t0))
+                        for Bread in (0., 100.):
+                            calc = Calculator(
+                                alpha, 0, beta, 0, sig0, dsig0, tcorr,
+                                bg0, dbg0, tcorr, Bread, t0, snr_goal)
+                            assert not calc.will_timeout()
+                            # Solve the quadratic equation for the initial exposure time.
+                            a = (alpha * sig0) ** 2
+                            b = -(alpha * sig0 + beta * bg0) * snr_goal ** 2
+                            c = -Bread * snr_goal ** 2
+                            tpred = (-b + np.sqrt(b ** 2 - 4 * a * c)) / (2 * a)
+                            assert np.allclose(tpred, calc.get_remaining(t0))
 
     def test_initial_samples(self):
         """Verify mean and RMS of initial samples"""
         alpha, beta = 0.5, 1.2
         sig0, bg0 = 0.9, 1.1
         dsig0, dbg0 = 0.10, 0.15
+        Bread = 0.
         t0, snr_goal = 1e6, 10.
         dbeta = 0.
         dtmax = 4000.
@@ -48,7 +54,7 @@ class TestCalculator(unittest.TestCase):
             for tcorr in (1e-2 * dtmax, 1e2 * dtmax):
                 calc = Calculator(
                     alpha, dalpha, beta, dbeta, sig0, dsig0, tcorr,
-                    bg0, dbg0, tcorr, t0, snr_goal)
+                    bg0, dbg0, tcorr, Bread, t0, snr_goal)
                 # Predict mean and stddev of initial samples.
                 Spred = alpha * sig0
                 dSpred = Spred * np.sqrt(
@@ -74,6 +80,7 @@ class TestCalculator(unittest.TestCase):
         dalpha, dbeta = 0.1, 0.05
         sig0, bg0 = 0.9, 1.1
         dsig0, dbg0 = 0.25, 0.25
+        Bread = 0.
         t0, snr_goal = 1e6, 10.
         dtmax = 4000.
         gen = np.random.RandomState(seed=123)
@@ -85,7 +92,7 @@ class TestCalculator(unittest.TestCase):
         for tcorr in (1e-2 * dtmax, 1e2 * dtmax):
             calc = Calculator(
                 alpha, dalpha, beta, dbeta, sig0, dsig0, tcorr,
-                bg0, dbg0, tcorr, t0, snr_goal)
+                bg0, dbg0, tcorr, Bread, t0, snr_goal)
             # Update signal and background rate estimates.
             idx = len(calc.dt_pred) // 2
             tupdate = t0 + calc.dt_pred[idx]

@@ -78,6 +78,8 @@ class Calculator(object):
     tcorr_bg : float
         Correlation time for changes in background rate. Acts as a prior on
         how rapidly the background rate changes. Must be > 0.
+    Bread : float
+        Constant read-noise variance to add to the integrated background rate.
     t0 : float
         Timestamp for when shutter was opened for the current exposure,
         in units of seconds with an arbitrary origin.
@@ -90,7 +92,7 @@ class Calculator(object):
         are calculated internally.
     """
     def __init__(self, alpha, dalpha, beta, dbeta,
-                 sig0, dsig0, tcorr_sig, bg0, dbg0, tcorr_bg, t0, snr_goal,
+                 sig0, dsig0, tcorr_sig, bg0, dbg0, tcorr_bg, Bread, t0, snr_goal,
                  dtmax=4000., npred=401):
         self.t0 = t0
         assert snr_goal > 0
@@ -112,6 +114,8 @@ class Calculator(object):
         self.dbg0 = dbg0
         self.tcorr_sig = tcorr_sig
         self.tcorr_bg = tcorr_bg
+        # Remember constant read-noise variance.
+        self.Bread = Bread
         # Initialize uncalibrated signal and background rate estimates.
         self.sig = []
         self.dsig = []
@@ -347,6 +351,9 @@ class Calculator(object):
         assert S.shape == B.shape, 'S, B must have same shape'
         Scum = np.cumsum(0.5 * tstep * (S[...,:-1] + S[...,1:]), axis=-1)
         Bcum = np.cumsum(0.5 * tstep * (B[...,:-1] + B[...,1:]), axis=-1)
+        # Add constant read-noise variance.
+        Bcum += self.Bread
+        # Calculate SNR as S / sqrt(S + B).
         snr = np.zeros_like(S)
         nonzero = Scum + Bcum > 0
         snr[...,1:][...,nonzero] = Scum[nonzero] / np.sqrt(

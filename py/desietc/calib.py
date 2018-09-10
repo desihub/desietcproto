@@ -52,8 +52,9 @@ class SignalCalib(object):
 
 class BackgroundCalib(object):
 
-    def __init__(self, rSC=1.5):
+    def __init__(self, rSC=1.5, Bread=40000.):
         self.rSC = rSC
+        self.Bread = Bread
         self.flux_sh = SampleHold()
 
     def rate(self, flux):
