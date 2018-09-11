@@ -29,7 +29,7 @@ class SignalCalib(object):
         self.b = b
         self.c = c
         self.rGFA = rGFA
-        self.flux_sh = SampleHold()
+        self.flux_sh = SampleHold(num_initial=1)
         self.airmass_exponent = airmass_exponent
         self.dust_coef = dust_coef
 
@@ -41,7 +41,7 @@ class SignalCalib(object):
         f_flux = 1 + self.rGFA * (flux - flux0) / flux0
         return f_seeing * f_flux
 
-    def alpha(self, airmass, Ebv, alpha0=6.9):
+    def alpha(self, airmass, Ebv, alpha0=22.):
         """Signal rate calibration.
         """
         value = (alpha0 *
@@ -55,7 +55,7 @@ class BackgroundCalib(object):
     def __init__(self, rSC=1.5, Bread=40000.):
         self.rSC = rSC
         self.Bread = Bread
-        self.flux_sh = SampleHold()
+        self.flux_sh = SampleHold(num_initial=3)
 
     def rate(self, flux):
         """Uncalibrated sky background rate.
@@ -63,10 +63,10 @@ class BackgroundCalib(object):
         flux0 = self.flux_sh.add(flux)
         return 1 + self.rSC * (flux - flux0) / flux0
 
-    def beta(self, beta0=2400.):
+    def beta(self, airmass, beta0=2400.):
         """Sky background rate calibration.
 
         TODO: add calculation of moon factor.
         """
-        value = beta0
+        value = beta0 * airmass
         return value, 0.1 * value
