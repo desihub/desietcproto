@@ -29,17 +29,21 @@ class SignalCalib(object):
         self.b = b
         self.c = c
         self.rGFA = rGFA
-        self.flux_sh = SampleHold(num_initial=1)
+        self.flux_sh = SampleHold(num_initial=5)
         self.airmass_exponent = airmass_exponent
         self.dust_coef = dust_coef
 
-    def rate(self, seeing_fwhm_arcsec, flux):
+    def rate(self, fwhm, dfwhm, flux, dflux):
         """Uncalibrated signal rate.
         """
-        f_seeing = self.a + self.b * seeing_fwhm_arcsec + self.c * seeing_fwhm_arcsec ** 2
+        f_seeing = self.a + self.b * fwhm + self.c * fwhm ** 2
         flux0 = self.flux_sh.add(flux)
         f_flux = 1 + self.rGFA * (flux - flux0) / flux0
-        return f_seeing * f_flux
+        y = f_seeing * f_flux
+        dy_dfwhm = (self.b + 2 * self.c * fwhm) * f_flux
+        dy_dflux = self.rGFA / flux0 * f_seeing
+        dy = np.sqrt((dy_dfwhm * dfwhm) ** 2 + (dy_dflux * dflux) ** 2)
+        return y, dy
 
     def alpha(self, airmass, Ebv, alpha0=22.):
         """Signal rate calibration.
@@ -47,7 +51,7 @@ class SignalCalib(object):
         value = (alpha0 *
             airmass ** self.airmass_exponent *
             10 ** (-2 * self.dust_coef * Ebv / 2.5))
-        return value, 0.1 * value
+        return value, 0.2 * value
 
 
 class BackgroundCalib(object):
@@ -55,13 +59,15 @@ class BackgroundCalib(object):
     def __init__(self, rSC=1.5, Bread=40000.):
         self.rSC = rSC
         self.Bread = Bread
-        self.flux_sh = SampleHold(num_initial=3)
+        self.sky_sh = SampleHold(num_initial=1)
 
-    def rate(self, flux):
+    def rate(self, sky, dsky):
         """Uncalibrated sky background rate.
         """
-        flux0 = self.flux_sh.add(flux)
-        return 1 + self.rSC * (flux - flux0) / flux0
+        sky0 = self.sky_sh.add(sky)
+        y = 1 + self.rSC * (sky - sky0) / sky0
+        dy = self.rSC / sky0 * dsky
+        return y, dy
 
     def beta(self, airmass, beta0=2400.):
         """Sky background rate calibration.
@@ -69,4 +75,4 @@ class BackgroundCalib(object):
         TODO: add calculation of moon factor.
         """
         value = beta0 * airmass
-        return value, 0.1 * value
+        return value, 0.2 * value

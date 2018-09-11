@@ -17,12 +17,12 @@ class TestCalib(unittest.TestCase):
 
     def test_signal_calib(self):
         scalib = SignalCalib()
-        assert np.allclose(scalib.rate(1.1, 0.5), 1.)
+        assert np.allclose(scalib.rate(1.1, 0.5)[0], 1.)
         alpha, _ = scalib.alpha(1.0, 0.0, 1.23)
         assert np.allclose(alpha, 1.23)
 
     def test_background_calib(self):
         bcalib = BackgroundCalib()
-        assert np.allclose(bcalib.rate(0.5), 1.)
+        assert np.allclose(bcalib.rate(0.5)[0], 1.)
         beta, _ = bcalib.beta(1.23)
         assert np.allclose(beta, 1.23)
