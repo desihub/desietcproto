@@ -11,6 +11,9 @@ class SampleHold(object):
         self.samples = []
         self.num_initial = num_initial
 
+    def reset(self):
+        self.samples = []
+
     def add(self, value):
         if len(self.samples) < self.num_initial:
             self.samples.append(value)
@@ -32,6 +35,9 @@ class SignalCalib(object):
         self.flux_sh = SampleHold(num_initial=5)
         self.airmass_exponent = airmass_exponent
         self.dust_coef = dust_coef
+
+    def reset(self):
+        self.flux_sh.reset()
 
     def rate(self, fwhm, dfwhm, flux, dflux):
         """Uncalibrated signal rate.
@@ -60,6 +66,9 @@ class BackgroundCalib(object):
         self.rSC = rSC
         self.Bread = Bread
         self.sky_sh = SampleHold(num_initial=1)
+
+    def reset(self):
+        self.sky_sh.reset()
 
     def rate(self, sky, dsky):
         """Uncalibrated sky background rate.
