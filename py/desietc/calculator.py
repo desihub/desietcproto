@@ -225,8 +225,9 @@ class Calculator(object):
 
         Based on all signal and background rate updates recorded so far.
 
-        This calculation is relatively expensive since it requires generating
-        random samples from the signal and background rate models.
+        This calculation is relatively expensive (with ``nsamples > 0``)
+        since it requires generating random samples from the signal and
+        background rate models. For a quick estimate, use ``nsamples = 0``.
 
         Parameters
         ----------
@@ -234,10 +235,12 @@ class Calculator(object):
             Current time used for forecasting.  Must be between t0, t0+dtmax.
         CL : float
             Confidence level to use for the returned range.  Must be 0-1.
+            Ignored when ``nsamples = 0``.
         nsamples : int
             Number of random samples of the signal and background rate models
             to generate. A larger number gives more accurate ranges but takes
-            longer to run. Must be > 0.
+            longer to run. A value of zero will interpolate the latest
+            predicted signal and background rate models, with no sampling.
         gen : numpy.random.RandomState or None
             Use the specified random number generator for reproducible results.
 
@@ -245,10 +248,15 @@ class Calculator(object):
         -------
         tuple
             Tuple (lo, hi) containing the true integrated SNR with posterior
-            probability CL.
+            probability CL.  Both values will be equal when ``nsamples = 0``.
         """
         assert tnow >= self.t0, 'Expected tnow >= t0'
         assert tnow <= self.t0 + self.dt_pred[-1], 'Expected tnow <= t0 + dtmax'
+        if nsamples == 0:
+            # Use linear interpolation in the most recent SNR forecast.
+            snrnow = np.interp(tnow, self.dt_pred, self.snr_pred)
+            return snrnow, snrnow
+        # Otherwise, sample the signal and background rate models.
         assert 0 < CL < 1, 'Invalid CL'
         assert nsamples > 0, 'Expected nsamples > 0'
         # Generate relative timestamps covering [0, tnow - t0].
@@ -425,16 +433,16 @@ class Calculator(object):
         B = self.beta * np.asarray(self.bg_pred)
 
         # Evaluate the corresponding nominal SNR model.
-        snr = self._eval_snr(self.dt_pred, S, B)
+        self.snr_pred = self._eval_snr(self.dt_pred, S, B)
 
         # Do we ever reach the goal?
-        if np.max(snr) < self.snr_goal:
+        if np.max(self.snr_pred) < self.snr_goal:
             self.dt_goal = self.dt_pred[-1]
         else:
             # Find the earliest time that predicted snr exceeds our goal.
-            idx = np.argmax(snr >= self.snr_goal)
+            idx = np.argmax(self.snr_pred >= self.snr_goal)
             assert idx < len(self.dt_pred)
             # Use linear interpolation to improve the estimated end time.
             pair = slice(idx - 1, idx + 1)
             self.dt_goal = np.interp(
-                self.snr_goal, snr[pair], self.dt_pred[pair])
+                self.snr_goal, self.snr_pred[pair], self.dt_pred[pair])
